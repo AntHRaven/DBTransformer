@@ -16,7 +16,7 @@ public class Main {
     // call method (from relational to doc) and give it as arg -- postgre reader
     TransformerToDocumentaryDB transformer = new TransformerToMongoDB();
     transformer.fromRelationalToDocumentary(new PostgresDBReader(c));
-    System.out.println("");
+
     // think over what will we return to user ? new connection to mongo ?
   }
 }
