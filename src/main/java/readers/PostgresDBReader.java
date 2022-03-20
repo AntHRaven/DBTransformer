@@ -1,7 +1,14 @@
 package readers;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import readers.abstractions.AbstractRelationalDBReader;
 
 public class PostgresDBReader extends AbstractRelationalDBReader {
@@ -20,12 +27,39 @@ public class PostgresDBReader extends AbstractRelationalDBReader {
 
     @Override
     public ArrayList<String> getAllTablesNames() {
-        return null;
+        ArrayList<String> tables = new ArrayList<>();
+        try {
+            DatabaseMetaData metaData = connection.getMetaData();
+            ResultSet tablesMD = metaData.getTables(
+                null,
+                null,
+                "%",
+                new String[] { "TABLE" }
+            );
+            while (tablesMD.next()) {
+                tables.add(tablesMD.getString("TABLE_NAME"));
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return tables;
     }
 
     @Override
-    public ArrayList<String> getAllFieldsNames(String tableName) {
-        return null;
+    public Map<String, String> getAllFieldsNames(String tableName) {
+        Map<String, String> fields = new HashMap<>();
+        try {
+            Statement stmt = connection.createStatement();
+            ResultSet rs = stmt.executeQuery("select * from " + tableName);
+            ResultSetMetaData rsmd = rs.getMetaData();
+            for(int i = 1; i<=rsmd.getColumnCount(); i++) {
+                fields.put(rsmd.getColumnName(i), rsmd.getColumnTypeName(i));
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+
+        return fields;
     }
 
     @Override
