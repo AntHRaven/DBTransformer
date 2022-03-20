@@ -8,6 +8,6 @@ public abstract class AbstractRelationalDBReader implements RelationalDBReader {
     protected Connection connection;
 
     protected AbstractRelationalDBReader(Connection connection){
-
+        this.connection = connection;
     }
 }
