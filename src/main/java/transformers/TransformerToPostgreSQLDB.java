@@ -1,23 +1,25 @@
 package transformers;
 
+import databases.PostgreSQLDB;
 import readers.interfaces.DocumentaryDBReader;
 import readers.interfaces.KeyValueDBReader;
 import readers.interfaces.RelationalDBReader;
-import transformers.interfaces.TransformerToRelationalDB;
+import transformers.interfaces.TransformerDB;
 
-public class TransformerToPostgreSQLDB implements TransformerToRelationalDB {
+public class TransformerToPostgreSQLDB implements TransformerDB<PostgreSQLDB> {
+
     @Override
-    public void fromRelationalToRelational(RelationalDBReader reader) {
+    public <T extends DocumentaryDBReader> void FromDocumentary(T reader) {
 
     }
 
     @Override
-    public void fromKeyValueToRelational(KeyValueDBReader reader) {
+    public <T extends KeyValueDBReader> void FromKeyValue(T reader) {
 
     }
 
     @Override
-    public void fromDocumentaryToRelational(DocumentaryDBReader reader) {
+    public <T extends RelationalDBReader> void FromRelational(T reader) {
 
     }
 }

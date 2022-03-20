@@ -1,7 +1,6 @@
 import java.sql.Connection;
 import readers.PostgresDBReader;
 import transformers.TransformerToMongoDB;
-import transformers.interfaces.TransformerToDocumentaryDB;
 
 public class Main {
   public static void main(String[] args) {
@@ -14,9 +13,6 @@ public class Main {
 
     // initialize transformator for current db (mongo)
     // call method (from relational to doc) and give it as arg -- postgre reader
-    TransformerToDocumentaryDB transformer = new TransformerToMongoDB();
-    transformer.fromRelationalToDocumentary(new PostgresDBReader(c));
-    System.out.printf("asdad");
     // think over what will we return to user ? new connection to mongo ?
   }
 }
