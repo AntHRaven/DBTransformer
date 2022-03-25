@@ -1,9 +1,13 @@
+package managers;
+
+import connection.ConnectionData;
 import readers.interfaces.DBReader;
 import transformers.DBTransformer;
+
 import java.sql.SQLException;
 import java.util.List;
 
-public class DBManager implements IDBManager {
+public class DBManagerImpl implements DBManager {
 
     @Override
     public void merge(List<ConnectionData<? extends DBReader, ? extends DBTransformer>> connectionDataList)
