@@ -1,9 +1,6 @@
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import readers.PostgresDBReader;
-import transformers.TransformerToMongoDB;
-import transformers.interfaces.TransformerToDocumentaryDB;
 
 public class DBTransformer {
   public static void main(String[] args) {
@@ -18,7 +15,7 @@ public class DBTransformer {
     } catch (SQLException e) {
       System.out.println("ОШИБКА ПОДКЛЮЧЕНИЯ К БД:\n" + e.getMessage());
     }
-    TransformerToDocumentaryDB transformer = new TransformerToMongoDB();
-    transformer.fromRelationalToDocumentary(new PostgresDBReader(connection));
+    //TransformerToDocumentaryDB transformer = new TransformerToMongoDB();
+    //transformer.fromRelationalToDocumentary(new PostgresDBReader(connection));
   }
 }

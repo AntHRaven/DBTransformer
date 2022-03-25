@@ -1,13 +1,10 @@
-package dto;
-
-import databases.dataBases.MongoDB;
+package connection;
 import readers.MongoDBReader;
-import readers.interfaces.DBReader;
 import transformers.ToMongoDBTransformer;
 
 import java.sql.Connection;
 
-public class ConnectionDataMongoImpl implements ConnectionData<MongoDBReader, ToMongoDBTransformer>{
+public class MongoDBConnectionData implements ConnectionData<MongoDBReader, ToMongoDBTransformer>{
     
     @Override
     public Connection getConnection() {

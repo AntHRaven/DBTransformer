@@ -1,24 +1,14 @@
 package transformers;
 
+import readers.MongoDBReader;
+import readers.PostgreSQLDBReader;
 import readers.interfaces.DBReader;
-import transformers.interfaces.DBTransformer;
 
-public class ToPostgreSQLDBTransformer
-      implements DBTransformer {
-    
-    
+public class ToPostgreSQLDBTransformer implements DBTransformer {
+
     @Override
-    public <T extends DBReader<DocumentaryDB>> void fromDocumentary(T reader) {
-    
+    public void transform(DBReader reader) {
+
     }
-    
-    @Override
-    public <T extends DBReader> void fromKeyValue(T reader) {
-    
-    }
-    
-    @Override
-    public <T extends RelationalDBReader> void fromRelational(T reader) {
-    
-    }
+
 }
