@@ -4,12 +4,10 @@ import readers.interfaces.DBReader;
 
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
-public class PostgresDBReader implements DBReader {
+public class PostgreSQLDBReader implements DBReader {
     
-    public PostgresDBReader(Connection connection) {
+    public PostgreSQLDBReader(Connection connection) {
     }
     
     public ArrayList<String> getAllTablesNames() {
@@ -32,7 +30,7 @@ public class PostgresDBReader implements DBReader {
         return null;
     }
 
-
+    /*
     public Map<String, String> getAllFieldsNames(String tableName) {
         Map<String, String> fields = new HashMap<>();
         try {
@@ -48,6 +46,8 @@ public class PostgresDBReader implements DBReader {
 
         return fields;
     }
+
+     */
 
    
     public ArrayList<String> getPrimaryKeyColumnsNames(String tableName) {
