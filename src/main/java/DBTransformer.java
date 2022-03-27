@@ -13,10 +13,10 @@ public class DBTransformer {
 
   public static void main(String[] args) throws SQLException {
     test();
-   
+
   }
-  
-  public static void test() throws SQLException {
+
+  public static void test() {
     ConnectionData<PostgresSQLDBReader, ToPostgresSQLDBTransformer> from = new PostgresSQLDBConnectionData(
           "jdbc:postgresql://ec2-52-209-185-5.eu-west-1.compute.amazonaws.com:5432/d8lbn6g1mlieem",
           "mjjqqxjrytjlac",
