@@ -1,10 +1,20 @@
 package connection;
-import readers.MongoDBReader;
-import transformers.ToMongoDBTransformer;
+
+import readers.impl.MongoDBReader;
+import transformers.impl.ToMongoDBTransformer;
 
 import java.sql.Connection;
 
-public class MongoDBConnectionData implements ConnectionData<MongoDBReader, ToMongoDBTransformer>{
+public class MongoDBConnectionData
+      extends ConnectionData<MongoDBReader, ToMongoDBTransformer> {
+    
+    public MongoDBConnectionData(String url) {
+        super(url);
+    }
+    
+    public MongoDBConnectionData(String url, String user, String password) {
+        super(url, user, password);
+    }
     
     @Override
     public Connection getConnection() {
