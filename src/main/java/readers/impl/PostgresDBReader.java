@@ -2,15 +2,13 @@ package readers.impl;
 
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import config.fieldTypes.PostgresTypes;
 import models.FieldModel;
 import readers.DBReader;
+import utils.fieldTypes.PostgresTypes;
 
-public class PostgresSQLDBReader implements DBReader {
+public class PostgresDBReader implements DBReader {
 
   @Override
   public ArrayList<String> getAllTablesNames(Connection connection) {
@@ -41,21 +39,14 @@ public class PostgresSQLDBReader implements DBReader {
       ResultSet rs = stmt.executeQuery("select * from " + tableName);
       ResultSetMetaData rsmd = rs.getMetaData();
       for (int i = 1; i <= rsmd.getColumnCount(); i++) {
-        fields.add(new FieldModel(rsmd.getColumnName(i), PostgresTypes.valueOfLabel(rsmd.getColumnTypeName(i)), false));
+        fields.add(new FieldModel(rsmd.getColumnName(i),
+            PostgresTypes.valueOfLabel(rsmd.getColumnTypeName(i)), false));
       }
     } catch (SQLException e) {
       System.out.println(e.getMessage());
     }
 
     return fields;
-  }
-
-  public ArrayList<String> getPrimaryKeyColumnsNames(String tableName) {
-    return null;
-  }
-
-  public ArrayList<String> getForeignKeyColumnsNames(String tableName) {
-    return null;
   }
 
 
