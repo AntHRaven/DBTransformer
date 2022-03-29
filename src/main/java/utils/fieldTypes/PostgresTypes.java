@@ -3,7 +3,10 @@ package utils.fieldTypes;
 public enum PostgresTypes implements GenericTypes {
 
   VARCHAR("varchar"),
-  INT("int");
+  INT("int"),
+  SERIAL("serial"),
+  INT4("int4"),
+  INT8("int8");
 
   private final String type;
 

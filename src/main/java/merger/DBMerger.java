@@ -1,7 +1,7 @@
 package merger;
 
 
-import connection.ConnectionData;
+import connection.DataBase;
 import readers.DBReader;
 import transformers.DBTransformer;
 
@@ -10,5 +10,5 @@ import java.util.List;
 
 public interface DBMerger {
 
-  Connection merge(List<ConnectionData<? extends DBReader, ? extends DBTransformer>> connectionDataList);
+  Connection merge(List<DataBase<? extends DBReader, ? extends DBTransformer>> dataBaseList);
 }

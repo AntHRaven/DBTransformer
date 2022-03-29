@@ -1,31 +1,28 @@
 package managers;
 
-import connection.ConnectionData;
+import connection.DataBase;
+import java.sql.SQLException;
 import readers.DBReader;
 import transformers.DBTransformer;
 
-import java.sql.SQLException;
 import java.util.List;
 
 public class DBManagerImpl
       implements DBManager {
-    
+
     @Override
     public void merge(
-          List<ConnectionData<? extends DBReader, ? extends DBTransformer>> connectionDataList) {
-        
+          List<DataBase<? extends DBReader, ? extends DBTransformer>> dataBaseList) {
+
     }
-    
+
     @Override
-    public void transform(ConnectionData<? extends DBReader, ? extends DBTransformer> from,
-                          ConnectionData<? extends DBReader, ? extends DBTransformer> to) {
-        
+    public void transform(DataBase<? extends DBReader, ? extends DBTransformer> from,
+                          DataBase<? extends DBReader, ? extends DBTransformer> to)
+        throws SQLException {
+
         DBReader reader = from.getReader();
         DBTransformer transformer = to.getTransformer();
-        List<String> tables = reader.getAllTablesNames(from.getConnection());
-        for (String table : tables) {
-            System.out.println("FIELDS: " + from.getReader().getAllFields(from.getConnection(), table));
-        }
-        transformer.transform(reader);
+        transformer.transform(reader, from.getConnection(), to.getConnection());
     }
 }

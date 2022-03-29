@@ -1,13 +1,14 @@
 package readers;
 
+import dto.TableDto;
 import java.sql.Connection;
 import java.util.List;
-import models.FieldModel;
+import dto.FieldDto;
 
 public interface DBReader {
 
-  List<String> getAllTablesNames(Connection connection);
+  List<TableDto> getAllTablesNames(Connection connection);
 
-  List<FieldModel> getAllFields(Connection connection, String tableName);
+  List<FieldDto> getAllFields(Connection connection, String tableName);
   // common behavior for all readers
 }

@@ -1,9 +1,10 @@
 package readers.impl;
 
+import dto.TableDto;
 import java.sql.Connection;
 import java.util.List;
 
-import models.FieldModel;
+import dto.FieldDto;
 import readers.DBReader;
 
 public class MongoDBReader implements DBReader {
@@ -12,12 +13,12 @@ public class MongoDBReader implements DBReader {
     }
 
     @Override
-    public List<String> getAllTablesNames(Connection connection) {
+    public List<TableDto> getAllTablesNames(Connection connection) {
         return null;
     }
-    
+
     @Override
-    public List<FieldModel> getAllFields(Connection connection, String tableName) {
+    public List<FieldDto> getAllFields(Connection connection, String tableName) {
         return null;
     }
 }
