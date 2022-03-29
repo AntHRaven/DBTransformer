@@ -2,73 +2,80 @@ package transformers.impl;
 
 import dto.ForeignKey;
 import dto.TableDto;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+
 import dto.FieldDto;
 import readers.DBReader;
 import transformers.DBTransformer;
 
-public class ToPostgresDBTransformer implements DBTransformer {
-  @Override
-  public void transform(DBReader reader, Connection fromConnection, Connection toConnection) throws SQLException {
-    List<TableDto> tables = reader.getAllTablesNames(fromConnection);
-    StringBuilder createAllTablesSQL = new StringBuilder();
-    StringBuilder addAllForeignKeysSQL = new StringBuilder();
-
-    for (TableDto table : tables) {
-      if(table.getForeignKeys() != null) {
-        addAllForeignKeysSQL.append(addForeignKeys(table));
-      }
-      createAllTablesSQL.append(createTable(table));
+public class ToPostgresDBTransformer
+      implements DBTransformer {
+    @Override
+    public void transform(DBReader reader, Connection fromConnection, Connection toConnection) throws SQLException {
+        List<TableDto> tables = reader.getAllTablesNames(fromConnection);
+        StringBuilder createAllTablesSQL = new StringBuilder();
+        StringBuilder addAllForeignKeysSQL = new StringBuilder();
+        
+        for (TableDto table : tables) {
+            if (table.getForeignKeys() != null) {
+                addAllForeignKeysSQL.append(addForeignKeys(table));
+            }
+            createAllTablesSQL.append(createTable(table));
+        }
+        Statement statement = toConnection.createStatement();
+        statement.executeUpdate(createAllTablesSQL.toString());
+        statement.executeUpdate(addAllForeignKeysSQL.toString());
+        statement.close();
     }
-    Statement statement = toConnection.createStatement();
-    statement.executeUpdate(createAllTablesSQL.toString());
-    statement.executeUpdate(addAllForeignKeysSQL.toString());
-    statement.close();
-  }
-
-  private String convertFieldsToString(List<FieldDto> fields) {
-    StringBuilder fieldsString = new StringBuilder();
-    for (int i = 0; i < fields.size(); i++) {
-      fieldsString.append(fields.get(i).toString());
-      if(i != fields.size()-1) {
-        fieldsString.append(", ");
-      }
+    
+    private String convertFieldsToString(List<FieldDto> fields) {
+        StringBuilder fieldsString = new StringBuilder();
+        for (int i = 0; i < fields.size(); i++) {
+            fieldsString.append(fields.get(i).toString());
+            if (i != fields.size() - 1) {
+                fieldsString.append(", ");
+            }
+        }
+        
+        return fieldsString.toString();
     }
-
-    return fieldsString.toString();
-  }
-
-  private String addForeignKeys(TableDto table) {
-    StringBuilder addForeignKeysSQL = new StringBuilder();
-    for (ForeignKey foreignKey : table.getForeignKeys()) {
-      addForeignKeysSQL
-          .append("alter table ")
-          .append(table.getName())
-          .append(" add constraint fk_")
-          .append(table.getName())
-          .append("_")
-          .append(foreignKey.getToTable())
-          .append(" foreign key (")
-          .append(foreignKey.getFieldsFrom())
-          .append(") ")
-          .append("references ")
-          .append(foreignKey.getToTable())
-          .append(" (")
-          .append(foreignKey.getFieldsTo())
-          .append("); ");
+    
+    private String addForeignKeys(TableDto table) {
+        StringBuilder addForeignKeysSQL = new StringBuilder();
+        for (ForeignKey foreignKey : table.getForeignKeys()) {
+            String fkName = "fk_" + table.getName() + "_" + foreignKey.getToTable();
+            addForeignKeysSQL
+                  .append("alter table ")
+                  .append(table.getName())
+                  .append(" drop constraint if exists ")
+                  .append(fkName)
+                  .append(";")
+                  .append(" alter table ")
+                  .append(table.getName())
+                  .append(" add constraint ")
+                  .append(fkName)
+                  .append(" foreign key (")
+                  .append(foreignKey.getFieldsFrom())
+                  .append(") ")
+                  .append("references ")
+                  .append(foreignKey.getToTable())
+                  .append(" (")
+                  .append(foreignKey.getFieldsTo())
+                  .append("); ");
+        }
+        return addForeignKeysSQL.toString();
     }
-    return addForeignKeysSQL.toString();
-  }
-
-  private String createTable(TableDto table) {
-    return "create table if not exists " +
-        table.getName() +
-        " ( " +
-        convertFieldsToString(table.getFields()) +
-        "); ";
-  }
-
+    
+    private String createTable(TableDto table) {
+        return "create table if not exists " +
+               table.getName() +
+               " ( " +
+               convertFieldsToString(table.getFields()) +
+               "); ";
+    }
+    
 }

@@ -9,6 +9,6 @@ import java.sql.Connection;
 import java.util.List;
 
 public interface DBMerger {
-
-  Connection merge(List<DataBase<? extends DBReader, ? extends DBTransformer>> dataBaseList);
+    
+    Connection merge(List<DataBase<? extends DBReader, ? extends DBTransformer>> dataBaseList);
 }
