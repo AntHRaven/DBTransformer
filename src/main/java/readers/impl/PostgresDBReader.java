@@ -23,12 +23,12 @@ public class PostgresDBReader
     @Override
     public DataBaseDto getDataBaseInfo(Connection connection) {
         DataBaseDto dataBase = new DataBaseDto();
-        dataBase.setTables(getAllTablesNames(connection));
+        dataBase.setTables(getAllTablesData(connection));
         return dataBase;
     }
     
     @Override
-    public List<TableDto> getAllTablesNames(Connection connection) {
+    public List<TableDto> getAllTablesData(Connection connection) {
         List<TableDto> tables = new ArrayList<>();
         try {
             DatabaseMetaData metaData = connection.getMetaData();
@@ -47,14 +47,12 @@ public class PostgresDBReader
             }
         }
         catch (SQLException e) {
-            
             System.out.println("ERROR: " + e.getMessage());
         }
         return tables;
     }
     
-    @Override
-    public List<FieldDto> getAllFields(Connection connection, String tableName) {
+    private List<FieldDto> getAllFields(Connection connection, String tableName) {
         List<FieldDto> fields = new ArrayList<>();
         try {
             Statement stmt = connection.createStatement();
@@ -64,6 +62,7 @@ public class PostgresDBReader
             
             ResultSetMetaData rsmd = rs.getMetaData();
             for (int i = 1; i <= rsmd.getColumnCount(); i++) {
+                assert primaryKeys != null;
                 FieldDto field = new FieldDto(
                       rsmd.getColumnName(i),
                       PostgresTypes.valueOfLabel(rsmd.getColumnTypeName(i)),
@@ -78,7 +77,7 @@ public class PostgresDBReader
         return fields;
     }
     
-    public List<ForeignKey> getForeignKeys(DatabaseMetaData metaData, String tableName) {
+    private List<ForeignKey> getForeignKeys(DatabaseMetaData metaData, String tableName) {
         List<ForeignKey> foreignKeys = new ArrayList<>();
         try {
             ResultSet rs = null;
@@ -101,7 +100,7 @@ public class PostgresDBReader
         }
     }
     
-    public List<String> getPrimaryKeys(DatabaseMetaData metaData, String tableName) {
+    private List<String> getPrimaryKeys(DatabaseMetaData metaData, String tableName) {
         List<String> list = new ArrayList<>();
         try {
             ResultSet rs = null;

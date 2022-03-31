@@ -12,8 +12,8 @@ public interface DBReader {
     
     DataBaseDto getDataBaseInfo(Connection connection);
     
-    List<TableDto> getAllTablesNames(Connection connection);
+    List<TableDto> getAllTablesData(Connection connection);
     
-    List<FieldDto> getAllFields(Connection connection, String tableName);
+//    List<FieldDto> getAllFields(Connection connection, String tableName);
     // common behavior for all readers
 }

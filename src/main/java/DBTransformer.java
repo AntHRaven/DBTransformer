@@ -1,20 +1,14 @@
 import connection.DataBase;
-import connection.MongoDB;
 import connection.PostgresDB;
+import dto.DataBaseDto;
 import managers.DBManagerImpl;
 import readers.DBReader;
-import readers.impl.MongoDBReader;
 import readers.impl.PostgresDBReader;
-import transformers.impl.ToMongoDBTransformer;
 import transformers.impl.ToPostgresDBTransformer;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-
-import utils.fieldTypes.PostgresTypes;
-import utils.typesConverter.TypesConverter;
-import utils.typesConverter.impl.PostgresConverter;
 
 public class DBTransformer {
     

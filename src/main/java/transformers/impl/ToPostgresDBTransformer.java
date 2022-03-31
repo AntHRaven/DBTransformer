@@ -1,5 +1,6 @@
 package transformers.impl;
 
+import dto.DataBaseDto;
 import dto.ForeignKey;
 import dto.TableDto;
 
@@ -16,7 +17,17 @@ public class ToPostgresDBTransformer
       implements DBTransformer {
     @Override
     public void transform(DBReader reader, Connection fromConnection, Connection toConnection) throws SQLException {
-        List<TableDto> tables = reader.getAllTablesNames(fromConnection);
+        List<TableDto> tables = reader.getAllTablesData(fromConnection);
+        createTables(toConnection, tables);
+    }
+    
+    @Override
+    public void transform(DataBaseDto dataBase, Connection fromConnection, Connection toConnection) throws SQLException {
+        List<TableDto> tables = dataBase.getTables();
+        createTables(toConnection, tables);
+    }
+    
+    private void createTables(Connection toConnection, List<TableDto> tables) throws SQLException {
         StringBuilder createAllTablesSQL = new StringBuilder();
         StringBuilder addAllForeignKeysSQL = new StringBuilder();
         

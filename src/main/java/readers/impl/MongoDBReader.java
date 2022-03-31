@@ -21,12 +21,8 @@ public class MongoDBReader
     }
     
     @Override
-    public List<TableDto> getAllTablesNames(Connection connection) {
+    public List<TableDto> getAllTablesData(Connection connection) {
         return null;
     }
     
-    @Override
-    public List<FieldDto> getAllFields(Connection connection, String tableName) {
-        return null;
-    }
 }

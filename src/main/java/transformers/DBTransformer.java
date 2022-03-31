@@ -3,13 +3,15 @@ package transformers;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import dto.DataBaseDto;
 import readers.DBReader;
 
 public interface DBTransformer {
-//    public <T extends DBReader<DocumentaryDB>> void fromDocumentary(T reader);
-//    public <T extends DBReader> void fromKeyValue(T reader);
-//    public <T extends RelationalDBReader> void fromRelational(T reader);
+
+    //TODO ошибка при перегрузке метода с листом DataBaseDto
     
-    public void transform(DBReader reader, Connection fromConnection, Connection toConnection) throws SQLException;
+    void transform(DBReader reader, Connection fromConnection, Connection toConnection) throws SQLException;
+    
+    void transform(DataBaseDto dataBase, Connection fromConnection, Connection toConnection) throws SQLException;
     
 }
