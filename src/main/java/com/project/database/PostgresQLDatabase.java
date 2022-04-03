@@ -50,7 +50,7 @@ public class PostgresQLDatabase extends Database{
     @Override
     protected ArrayList<FieldDTO> getAllTableFields(String tableName) throws SQLException {
         ArrayList<FieldDTO> fields = new ArrayList<>();
-        ResultSet rs = metaData.getColumns(null, null, tableName, "%");;
+        ResultSet rs = metaData.getColumns(null, null, tableName, "%");
         
         while(rs.next()) {
             String columnName = rs.getString(4);

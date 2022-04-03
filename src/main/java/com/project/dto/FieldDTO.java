@@ -10,11 +10,6 @@ public class FieldDTO {
     private boolean isPK;
     private ForeignKeyDTO FK;
     
-    
-    public FieldDTO(String name, int type, boolean isPK) {
-        new FieldDTO(name, type, isPK, null);
-    }
-    
     public FieldDTO(String name, int type, boolean isPK, ForeignKeyDTO FK){
         this.name = name;
         this.type = type;

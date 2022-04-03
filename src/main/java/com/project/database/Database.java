@@ -20,7 +20,7 @@ public abstract class Database {
     public Database(Connection connection) throws SQLException {
         this.connection = connection;
         metaData = connection.getMetaData();
-    };
+    }
     
     public Connection getConnection(){return this.connection;}
     public DatabaseDTO getDatabaseDTO(){return this.databaseDTO;}
