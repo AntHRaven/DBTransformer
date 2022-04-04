@@ -1,11 +1,11 @@
-package com.project.manager;
+package manager;
 
-import com.project.database.Database;
+import database.Database;
 import java.sql.SQLException;
-import com.project.transformer.DBTransformer;
+import transformer.DBTransformer;
 import java.util.List;
 
-public class DBManager{
+public class DBTManager {
     
     public void merge(List<Database> databaseList) throws SQLException {
         

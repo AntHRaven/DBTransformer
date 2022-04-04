@@ -1,5 +1,5 @@
-package com.project.merger;
-import com.project.database.Database;
+package merger;
+import database.Database;
 
 import java.sql.Connection;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.project.dto;
+package dto;
 
 import java.util.List;
 import lombok.Data;

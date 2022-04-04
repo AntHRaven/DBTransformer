@@ -1,8 +1,8 @@
-package com.project.transformer;
+package transformer;
 
 import java.sql.SQLException;
 
-import com.project.database.Database;
+import database.Database;
 
 public interface DBTransformer {
 
