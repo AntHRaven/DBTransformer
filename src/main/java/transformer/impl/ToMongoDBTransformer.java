@@ -1,4 +1,4 @@
-package transformer;
+package transformer.impl;
 
 import java.sql.SQLException;
 
@@ -10,9 +10,9 @@ public class ToMongoDBTransformer implements DBTransformer {
     
     private DatabaseDTO databaseDTO;
     
+    
     @Override
-    public void transform(Database from) throws SQLException {
-        databaseDTO = from.makeDTO();
-        
+    public void transform(Database from, Database to) throws SQLException {
+    
     }
 }
