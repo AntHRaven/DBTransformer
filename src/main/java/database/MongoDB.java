@@ -9,8 +9,9 @@ import dto.FieldDTO;
 import dto.ForeignKeyDTO;
 import dto.TableDTO;
 import transformer.DBTransformer;
-import transformer.ToMongoDBTransformer;
+import transformer.impl.ToMongoDBTransformer;
 import java.net.UnknownHostException;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -35,6 +36,11 @@ public class MongoDB
     @Override
     public DatabaseDTO makeDTO() throws SQLException {
         return new DatabaseDTO(getAllTables());
+    }
+    
+    @Override
+    public Connection getConnection() {
+        return null;
     }
     
     @Override

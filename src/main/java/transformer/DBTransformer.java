@@ -6,6 +6,6 @@ import database.Database;
 
 public interface DBTransformer {
 
-    void transform(Database from) throws SQLException;
+    void transform(Database from, Database to) throws SQLException;
     
 }
