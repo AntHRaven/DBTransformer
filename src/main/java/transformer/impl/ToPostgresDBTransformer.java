@@ -29,8 +29,6 @@ public class ToPostgresDBTransformer
             createAllTablesSQL.append(generateSQLCreateTable(table));
             addAllForeignKeysSQL.append(generateSQLForeignKeys(table));
         }
-        System.out.println("TABLES: " + createAllTablesSQL);
-        System.out.println("FOREIGN: " + addAllForeignKeysSQL);
         Statement statement = to.getConnection().createStatement();
         statement.executeUpdate(createAllTablesSQL.toString());
         statement.executeUpdate(addAllForeignKeysSQL.toString());

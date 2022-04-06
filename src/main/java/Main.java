@@ -2,14 +2,13 @@ import database.Database;
 import database.PostgreSQL;
 import manager.DBTManager;
 
-import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class Main {
     
-    public static void main(String[] args) throws SQLException, UnknownHostException {
+    public static void main(String[] args) throws SQLException {
         
         Connection postgresqlConnectionFrom = DriverManager.getConnection(
               "jdbc:postgresql://ec2-52-209-185-5.eu-west-1.compute.amazonaws.com:5432/d8lbn6g1mlieem",
@@ -21,7 +20,7 @@ public class Main {
               "12345");
         Database from = new PostgreSQL(postgresqlConnectionFrom);
         Database to = new PostgreSQL(postgresqlConnectionTo);
-
+        
         DBTManager DBTManager = new DBTManager();
         DBTManager.transform(from, to);
     }
