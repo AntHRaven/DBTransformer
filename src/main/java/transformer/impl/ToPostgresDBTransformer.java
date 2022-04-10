@@ -14,6 +14,7 @@ import database.Database;
 import database.PostgreSQL;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
+import dto.ForeignKeyDTO;
 import dto.TableDTO;
 import transformer.DBTransformer;
 
