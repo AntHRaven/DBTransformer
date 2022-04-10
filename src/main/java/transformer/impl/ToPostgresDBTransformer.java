@@ -1,27 +1,30 @@
 package transformer.impl;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
-
 import database.Database;
+import database.PostgreSQL;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
-import dto.ForeignKeyDTO;
 import dto.TableDTO;
 import transformer.DBTransformer;
 
-public class ToPostgresDBTransformer
-      implements DBTransformer {
+public class ToPostgresDBTransformer implements DBTransformer {
     
     private DatabaseDTO databaseDTO;
     
     @Override
     public void transform(Database from, Database to) throws SQLException {
-        createTables(from.makeDTO(), to);
+        if (!(to instanceof PostgreSQL)) return;
+    
+        Connection connection = ((PostgreSQL) to).getConnection();
+        databaseDTO = from.makeDTO();
+        createTables(connection);
     }
     
-    private void createTables(DatabaseDTO databaseDTO, Database to) throws SQLException {
+    private void createTables(Connection connection) throws SQLException {
         StringBuilder createAllTablesSQL = new StringBuilder();
         StringBuilder addAllForeignKeysSQL = new StringBuilder();
         
@@ -29,7 +32,7 @@ public class ToPostgresDBTransformer
             createAllTablesSQL.append(generateSQLCreateTable(table));
             addAllForeignKeysSQL.append(generateSQLForeignKeys(table));
         }
-        Statement statement = to.getConnection().createStatement();
+        Statement statement = connection.createStatement();
         statement.executeUpdate(createAllTablesSQL.toString());
         statement.executeUpdate(addAllForeignKeysSQL.toString());
         statement.close();

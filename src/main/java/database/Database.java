@@ -10,7 +10,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 
 public abstract class Database {
-   
+    
     protected DBTransformer dbTransformer;
     
     abstract public <T extends DBTransformer> T getTransformer();

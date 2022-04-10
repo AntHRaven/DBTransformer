@@ -18,6 +18,6 @@ public class DBTManager {
         
     }
     
-    private DBTManager(){}
+    public DBTManager(){}
     
 }

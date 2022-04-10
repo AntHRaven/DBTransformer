@@ -1,4 +1,4 @@
-package transformer;
+package transformer.impl;
 
 import java.sql.SQLException;
 
@@ -6,6 +6,7 @@ import com.mongodb.MongoClient;
 import database.Database;
 import database.MongoDB;
 import dto.DatabaseDTO;
+import transformer.DBTransformer;
 
 public class ToMongoDBTransformer implements DBTransformer {
     

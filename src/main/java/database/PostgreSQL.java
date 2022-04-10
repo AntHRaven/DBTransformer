@@ -5,12 +5,11 @@ import dto.FieldDTO;
 import dto.ForeignKeyDTO;
 import dto.TableDTO;
 import transformer.DBTransformer;
-import transformer.ToPostgresDBTransformer;
-
+import transformer.impl.ToPostgresDBTransformer;
 import java.sql.*;
 import java.util.ArrayList;
-
-import java.sql.Types;
+import java.util.HashSet;
+import java.util.Set;
 
 public class PostgreSQL extends Database{
     
@@ -34,12 +33,11 @@ public class PostgreSQL extends Database{
     
     @Override
     public DatabaseDTO makeDTO() throws SQLException {
-        //return new DatabaseDTO(getAllTables());
-        return null;
+        return new DatabaseDTO(getAllTables());
     }
     
-    protected ArrayList<TableDTO> getAllTables() throws SQLException {
-        ArrayList<TableDTO> tables = new ArrayList<>();
+    protected Set<TableDTO> getAllTables() throws SQLException {
+        Set<TableDTO> tables = new HashSet<>();
         for (String tableName : getAllTablesNames()) {
             TableDTO tableDTO = new TableDTO(tableName, getAllTableFields(tableName));
             tables.add(tableDTO);

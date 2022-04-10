@@ -6,7 +6,7 @@ import dto.FieldDTO;
 import dto.ForeignKeyDTO;
 import dto.TableDTO;
 import transformer.DBTransformer;
-import transformer.ToMongoDBTransformer;
+import transformer.impl.ToMongoDBTransformer;
 import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.util.*;
