@@ -10,14 +10,21 @@ import transformer.ToPostgresDBTransformer;
 import java.sql.*;
 import java.util.ArrayList;
 
-public class PostgreSQL
-      extends Database{
+import java.sql.Types;
+
+public class PostgreSQL extends Database{
     
     private final DatabaseMetaData metaData;
+    private final Connection connection;
     
     public PostgreSQL(Connection connection) throws SQLException {
         this.dbTransformer = new ToPostgresDBTransformer();
         metaData = connection.getMetaData();
+        this.connection = connection;
+    }
+    
+    public Connection getConnection() {
+        return connection;
     }
     
     @Override
@@ -27,7 +34,8 @@ public class PostgreSQL
     
     @Override
     public DatabaseDTO makeDTO() throws SQLException {
-        return new DatabaseDTO(getAllTables());
+        //return new DatabaseDTO(getAllTables());
+        return null;
     }
     
     protected ArrayList<TableDTO> getAllTables() throws SQLException {
@@ -38,9 +46,8 @@ public class PostgreSQL
         }
         return tables;
     }
-    
-    @Override
-    protected ArrayList<FieldDTO> getAllTableFields(String tableName) throws SQLException {
+   
+    private ArrayList<FieldDTO> getAllTableFields(String tableName) throws SQLException {
         ArrayList<FieldDTO> fields = new ArrayList<>();
         ResultSet rs = metaData.getColumns(null, null, tableName, "%");
         
@@ -53,8 +60,7 @@ public class PostgreSQL
         return fields;
     }
     
-    @Override
-    protected ForeignKeyDTO getFK(String columnName, String tableName) throws SQLException {
+    private ForeignKeyDTO getFK(String columnName, String tableName) throws SQLException {
         ResultSet rs = metaData.getImportedKeys(null, null, tableName);
         while (rs.next()) {
             if (columnName.equals(rs.getString("FKCOLUMN_NAME"))){

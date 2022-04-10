@@ -7,8 +7,6 @@ public class ToPostgreSQLTypeConverter {
     
     }
     
-    private ToPostgreSQLTypeConverter(){
-    
-    }
+    private ToPostgreSQLTypeConverter(){}
 
 }

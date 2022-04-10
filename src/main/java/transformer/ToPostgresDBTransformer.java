@@ -11,7 +11,8 @@ public class ToPostgresDBTransformer implements DBTransformer {
     private DatabaseDTO databaseDTO;
     
     @Override
-    public void transform(Database from) throws SQLException {
+    public void transform(Database from, Database to) throws SQLException {
+        //надо тогда какую то проверку делать что пришла нужная база
         databaseDTO = from.makeDTO();
         
     }

@@ -7,8 +7,6 @@ public class ToMongoDBTypeConverter {
     
     }
     
-    private ToMongoDBTypeConverter(){
-    
-    }
+    private ToMongoDBTypeConverter(){}
 
 }
