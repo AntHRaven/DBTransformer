@@ -17,6 +17,11 @@ public class MongoDB extends Database {
     
     private final MongoClient mongoClient;
     private final Set<TableDTO> tables = new HashSet<>();
+    private final String collectionTableName = "collections";
+    private final String collectionFieldName = "collection_name";
+    private final String documentIdFieldName = "_id";
+    private final String documentDefName = "document";
+    private final String delimiter = "_";
     
     public MongoDB(MongoClient mongoClient) throws SQLException, UnknownHostException {
         this.mongoClient = mongoClient;
@@ -39,57 +44,59 @@ public class MongoDB extends Database {
     }
     
     private void makeAllTables(){
+        makeTableCollections();
         for (DBCollection collection : getAllCollections()) {
             
             DBCursor cursor = collection.find();
             
             if(cursor.hasNext()) {
                 DBObject document = cursor.next();
-                makeTableFromDocument(document, collection);
+                makeTableFromDocument(document);
             }
-            
-            makeTableFromCollection(collection);
         }
     }
     
-    private void makeTableFromCollection(DBCollection collection){
+    private void makeTableCollections(){
         ArrayList<FieldDTO> fields = new ArrayList<>();
-        fields.add(new FieldDTO("_id", 4, true, null));
-        tables.add(new TableDTO(collection.getName(), fields));
+        fields.add(new FieldDTO(collectionFieldName, 4, true, null));
+        tables.add(new TableDTO(collectionTableName, fields));
     }
     
-    static String generateDocumentName(DBObject document, String tableName){
-        StringBuilder name = new StringBuilder(tableName);
-        if (document.get("_id") instanceof DBObject){
-            
-            name.append(document.get("_id").toString()
-                              .replace("{", "")
-                              .replace("}", "")
-                              .replace(":", "")
-                              .replaceAll("\"", "")
-                              .replaceAll("( )+", "_"));
-            
+    private String generateDocumentName(DBObject document){
+        String name = documentDefName + delimiter;
+        if (document.get(documentIdFieldName) instanceof DBObject){
+            name += document.get(documentIdFieldName).toString();
+            name = parseJson(name);
         }else {
-            name.append("_").append(document.get("_id"));
+            name = delimiter + document.get(documentIdFieldName);
         }
-        return name.toString();
+        return name;
+    }
+    
+    private String parseJson(String s){
+        return s.replace("{", "")
+              .replace("}", "")
+              .replace(":", "")
+              .replaceAll("\"", "")
+              .replaceAll("( )+", delimiter);
     }
     
     private void makeTableFromSubObject(DBObject subObject, String tableName){
     
         ArrayList<FieldDTO> fields = new ArrayList<>();
-        fields.add(new FieldDTO("_id", 1, true, null));
+        fields.add(new FieldDTO(documentIdFieldName, 1, true, null));
         
         for (String key : subObject.keySet()) {
+            String relTableName = tableName + key;
             Object field = subObject.get(key);
             
             //if it's object
             if (field instanceof DBObject) {
                 fields.add(
-                      new FieldDTO(key + "_id", 1, true,
-                      new ForeignKeyDTO(tableName + key, "_id")));
+                      new FieldDTO(key + documentIdFieldName, 1, true,
+                      new ForeignKeyDTO(relTableName, documentIdFieldName)));
     
-                makeTableFromSubObject((DBObject) field, tableName + key);
+                makeTableFromSubObject((DBObject) field, relTableName);
                 
             //if not object
             }else fields.add(new FieldDTO(key, 1, false, null));
@@ -98,43 +105,33 @@ public class MongoDB extends Database {
         tables.add(new TableDTO(tableName, fields));
     }
     
-    private void makeTableFromDocument(DBObject document, DBCollection collection){
+    private void makeTableFromDocument(DBObject document){
         
-        String name = generateDocumentName(document, "DOCUMENT");
+        String name = generateDocumentName(document);
         ArrayList<FieldDTO> fields = new ArrayList<>();
+        
+        fields.add(
+              new FieldDTO(collectionFieldName, 1, false,
+              new ForeignKeyDTO(collectionTableName, collectionFieldName)));
+        
         for (String key : document.keySet()) {
-            String subObjectName = name + "_" + key;
+            String subObjectName = name + delimiter + key;
             Object field = document.get(key);
-    
-            if (key.equals("_id")) {
-                //if key is _id and it's object
-                // TODO: 10.04.2022
-                //PROBLEM -- we need two foreign keys on one field...
-                //can we generate another additional field ?
-                if (field instanceof DBObject) {
+            
+            //if it's object
+            if (field instanceof DBObject) {
+                if (key.equals(documentIdFieldName)){
                     fields.add(
-                          new FieldDTO(key + "_id", 1, true,
-                          new ForeignKeyDTO(subObjectName, "_id")));
-                    makeTableFromSubObject((DBObject) field, subObjectName);
+                          new FieldDTO(key, 1, true,
+                          new ForeignKeyDTO(subObjectName, documentIdFieldName)));
+                }else {
+                    fields.add(
+                          new FieldDTO(key + documentIdFieldName, 1, true,
+                          new ForeignKeyDTO(subObjectName, documentIdFieldName)));
                 }
-                
-                //if key is _id and not object
-                else fields.add(
-                      new FieldDTO(key, 1, true,
-                      new ForeignKeyDTO(collection.getName(), "_id")));
-            }
-            else {
-                //if not PK field and it's object
-                if (field instanceof DBObject) {
-                    fields.add(
-                          new FieldDTO(key + "_id", 1, true,
-                          new ForeignKeyDTO(subObjectName, "_id")));
-                    
-                    makeTableFromSubObject((DBObject) field, subObjectName);
-                    
-                //if not PK field and not object
-                }else fields.add(new FieldDTO(key, 1, false, null));
-            }
+                makeTableFromSubObject((DBObject) field, subObjectName);
+            //if not object
+            }else fields.add(new FieldDTO(key, 1, false, null));
         }
         tables.add(new TableDTO(name, fields));
     }
