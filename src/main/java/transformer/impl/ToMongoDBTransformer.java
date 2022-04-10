@@ -25,4 +25,9 @@ public class ToMongoDBTransformer implements DBTransformer {
         
         makeTables(mongoClient);
     }
+    
+    @Override
+    public void transform(DatabaseDTO from, Database to) throws SQLException {
+    
+    }
 }
