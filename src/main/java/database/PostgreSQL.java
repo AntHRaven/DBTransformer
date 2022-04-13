@@ -7,13 +7,15 @@ import dto.ForeignKeyDTO;
 import dto.TableDTO;
 import transformer.DBTransformer;
 import transformer.impl.ToPostgresDBTransformer;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
-public class PostgreSQL extends Database {
+public class PostgreSQL extends Database{
     
     private final DatabaseMetaData metaData;
     private final Connection connection;
@@ -62,21 +64,10 @@ public class PostgreSQL extends Database {
         }
         return fields;
     }
-    
-    private ForeignKeyDTO getFK(String columnName, String tableName) throws SQLException {
-        ResultSet rs = metaData.getImportedKeys(null, null, tableName);
-        while (rs.next()) {
-            if (columnName.equals(rs.getString("FKCOLUMN_NAME"))) {
-                return new ForeignKeyDTO(rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME"));
-            }
-        }
-        return null;
-    }
-    
+   
     private boolean isPrimary(String columnName, String tableName) throws SQLException {
-        for (String key : getTablePrimaryKeys(tableName)) {
-            if (columnName.equals(key))
-                return true;
+        for (String key : getPK(tableName)) {
+            if (columnName.equals(key)) {return true;}
         }
         return false;
     }
@@ -84,7 +75,7 @@ public class PostgreSQL extends Database {
     private ArrayList<String> getAllTablesNames() throws SQLException {
         ArrayList<String> tablesNames = new ArrayList<>();
         ResultSet rs = metaData.getTables(null, null, "%", new String[]{"TABLE"});
-        while (rs.next()) {
+        while(rs.next()) {
             tablesNames.add(rs.getString(1));
         }
         return tablesNames;
@@ -99,6 +90,16 @@ public class PostgreSQL extends Database {
         return primaryKeys;
     }
     
+    private ForeignKeyDTO getFK(String columnName, String tableName) throws SQLException {
+        ResultSet rs = metaData.getImportedKeys(null, null, tableName);
+        while (rs.next()) {
+            if (columnName.equals(rs.getString("FKCOLUMN_NAME"))) {
+                return new ForeignKeyDTO(rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME"));
+            }
+        }
+        return null;
+    }
     
+   
 }
 
