@@ -1,6 +1,5 @@
 package database;
 
-import converter.ToPostgreSQLTypeConverter;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.ForeignKeyDTO;
@@ -12,17 +11,16 @@ import transformer.impl.ToPostgresDBTransformer;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
-public class PostgreSQL extends Database{
+public class PostgreSQL
+      extends Database {
     
     private final DatabaseMetaData metaData;
     private final PGConnectionPoolDataSource connectionPool;
     
-    public PostgreSQL(PGConnectionPoolDataSource connectionPool, List<String> names) throws SQLException {
-        super(names);
+    public PostgreSQL(PGConnectionPoolDataSource connectionPool) throws SQLException {
         this.dbTransformer = new ToPostgresDBTransformer();
         metaData = connectionPool.getConnection().getMetaData();
         this.connectionPool = connectionPool;
@@ -103,4 +101,3 @@ public class PostgreSQL extends Database{
     
    
 }
-
