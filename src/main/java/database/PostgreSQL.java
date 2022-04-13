@@ -4,7 +4,6 @@ import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.ForeignKeyDTO;
 import dto.TableDTO;
-import org.postgresql.ds.PGConnectionPoolDataSource;
 import transformer.DBTransformer;
 import transformer.impl.ToPostgresDBTransformer;
 
@@ -18,16 +17,16 @@ public class PostgreSQL
       extends Database {
     
     private final DatabaseMetaData metaData;
-    private final PGConnectionPoolDataSource connectionPool;
+    private final Connection connection;
     
-    public PostgreSQL(PGConnectionPoolDataSource connectionPool) throws SQLException {
+    public PostgreSQL(Connection connection) throws SQLException {
         this.dbTransformer = new ToPostgresDBTransformer();
-        metaData = connectionPool.getConnection().getMetaData();
-        this.connectionPool = connectionPool;
+        metaData = connection.getMetaData();
+        this.connection = connection;
     }
     
-    public Connection getConnection() throws SQLException {
-        return connectionPool.getConnection();
+    public Connection getConnection() {
+        return connection;
     }
     
     @Override
@@ -37,7 +36,7 @@ public class PostgreSQL
     
     @Override
     public DatabaseDTO makeDTO() throws SQLException {
-        return new DatabaseDTO(getAllTables(), connectionPool.getConnection().getMetaData().getURL());
+        return new DatabaseDTO(getAllTables(), connection.getMetaData().getURL());
     }
     
     protected Set<TableDTO> getAllTables() throws SQLException {
@@ -52,7 +51,7 @@ public class PostgreSQL
     private ArrayList<String> getAllTablesNames() {
         ArrayList<String> tableNames = new ArrayList<>();
         try {
-            DatabaseMetaData metaData = connectionPool.getConnection().getMetaData();
+            DatabaseMetaData metaData = connection.getMetaData();
             ResultSet tablesMD = metaData.getTables(
                   null,
                   null,
@@ -71,7 +70,7 @@ public class PostgreSQL
     
     protected ArrayList<FieldDTO> getAllTableFields(String tableName) throws SQLException {
         ArrayList<FieldDTO> fields = new ArrayList<>();
-        Statement stmt = connectionPool.getConnection().createStatement();
+        Statement stmt = connection.createStatement();
         ResultSet rs = stmt.executeQuery("select * from " + tableName);
         ResultSetMetaData rsmd = rs.getMetaData();
         for (int i = 1; i <= rsmd.getColumnCount(); i++) {
