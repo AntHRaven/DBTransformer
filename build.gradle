@@ -21,6 +21,8 @@ repositories {
 dependencies {
     implementation 'org.mongodb:mongo-java-driver:2.12.3'
     implementation 'org.postgresql:postgresql:42.3.3'
+    implementation 'org.apache.commons:commons-dbcp2:2.9.0'
+
 
     compileOnly 'org.projectlombok:lombok:1.18.22'
     annotationProcessor 'org.projectlombok:lombok:1.18.22'
