@@ -1,12 +1,21 @@
 package converter;
-import java.sql.Types;
+import dto.DatabaseDTO;
+import dto.FieldDTO;
+import dto.TableDTO;
 
 public class ToPostgreSQLTypeConverter {
     
-    public static void convert(Types type){
-    
+    private void convertAllFields(DatabaseDTO databaseDTO){
+        for (TableDTO table : databaseDTO.getTables()) {
+            for (FieldDTO field : table.getFields()) {
+                //изменить поле
+            }
+        }
+        
     }
     
-    private ToPostgreSQLTypeConverter(){}
+    private ToPostgreSQLTypeConverter(){
+    
+    }
 
 }

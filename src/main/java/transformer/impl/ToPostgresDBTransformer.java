@@ -14,17 +14,18 @@ import transformer.DBTransformer;
 public class ToPostgresDBTransformer implements DBTransformer {
     
     private DatabaseDTO databaseDTO;
+    private Connection connection;
     
     @Override
     public void transform(Database from, Database to) throws SQLException {
         if (!(to instanceof PostgreSQL)) return;
     
-        Connection connection = ((PostgreSQL) to).getConnection();
+        connection = ((PostgreSQL) to).getConnection();
         databaseDTO = from.makeDTO();
-        createTables(connection);
+        createTables();
     }
     
-    private void createTables(Connection connection) throws SQLException {
+    private void createTables() throws SQLException {
         StringBuilder createAllTablesSQL = new StringBuilder();
         StringBuilder addAllForeignKeysSQL = new StringBuilder();
         
