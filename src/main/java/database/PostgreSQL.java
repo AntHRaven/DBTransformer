@@ -4,7 +4,6 @@ import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.ForeignKeyDTO;
 import dto.TableDTO;
-import org.postgresql.ds.PGConnectionPoolDataSource;
 import transformer.DBTransformer;
 import transformer.impl.ToPostgresDBTransformer;
 
@@ -20,10 +19,10 @@ public class PostgreSQL
     private final DatabaseMetaData metaData;
     private final PGConnectionPoolDataSource connectionPool;
     
-    public PostgreSQL(PGConnectionPoolDataSource connectionPool) throws SQLException {
+    public PostgreSQL(Connection connection) throws SQLException {
         this.dbTransformer = new ToPostgresDBTransformer();
-        metaData = connectionPool.getConnection().getMetaData();
-        this.connectionPool = connectionPool;
+        metaData = connection.getMetaData();
+        this.connection = connection;
     }
     
     public Connection getConnection() throws SQLException {
@@ -33,6 +32,11 @@ public class PostgreSQL
     @Override
     public DBTransformer getTransformer() {
         return this.dbTransformer;
+    }
+    
+    @Override
+    public DBMerger getMerger() {
+        return this.dbMerger;
     }
     
     @Override
