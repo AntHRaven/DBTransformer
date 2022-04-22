@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.Objects;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class TableDTO {
     
     private String name;
