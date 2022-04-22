@@ -4,29 +4,32 @@ import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.ForeignKeyDTO;
 import dto.TableDTO;
+import merger.DBMerger;
+import merger.impl.DBMergerImpl;
+import org.postgresql.ds.PGConnectionPoolDataSource;
 import transformer.DBTransformer;
-import transformer.impl.ToPostgresDBTransformer;
+import transformer.impl.ToPostgreDBTransformer;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.Callable;
 
 public class PostgreSQL
       extends Database {
     
     private final DatabaseMetaData metaData;
-    private final Connection connection;
+    private final PGConnectionPoolDataSource connectionPool;
     
-    public PostgreSQL(Connection connection) throws SQLException {
-        this.dbTransformer = new ToPostgresDBTransformer();
-        metaData = connection.getMetaData();
-        this.connection = connection;
+    public PostgreSQL(PGConnectionPoolDataSource connectionPool) throws SQLException {
+        this.dbTransformer = new ToPostgreDBTransformer();
+        this.dbMerger = new DBMergerImpl();
+        metaData = connectionPool.getConnection().getMetaData();
+        this.connectionPool = connectionPool;
     }
     
-    public Connection getConnection() {
-        return connection;
+    public Connection getConnection() throws SQLException {
+        return connectionPool.getConnection();
     }
     
     @Override
@@ -35,8 +38,13 @@ public class PostgreSQL
     }
     
     @Override
+    public DBMerger getMerger() {
+        return this.dbMerger;
+    }
+    
+    @Override
     public DatabaseDTO makeDTO() throws SQLException {
-        return new DatabaseDTO(getAllTables(), connection.getMetaData().getURL());
+        return new DatabaseDTO(getAllTables(), connectionPool.getConnection().getMetaData().getURL());
     }
     
     protected Set<TableDTO> getAllTables() throws SQLException {
@@ -51,7 +59,7 @@ public class PostgreSQL
     private ArrayList<String> getAllTablesNames() {
         ArrayList<String> tableNames = new ArrayList<>();
         try {
-            DatabaseMetaData metaData = connection.getMetaData();
+            DatabaseMetaData metaData = connectionPool.getConnection().getMetaData();
             ResultSet tablesMD = metaData.getTables(
                   null,
                   null,
@@ -70,7 +78,7 @@ public class PostgreSQL
     
     protected ArrayList<FieldDTO> getAllTableFields(String tableName) throws SQLException {
         ArrayList<FieldDTO> fields = new ArrayList<>();
-        Statement stmt = connection.createStatement();
+        Statement stmt = connectionPool.getConnection().createStatement();
         ResultSet rs = stmt.executeQuery("select * from " + tableName);
         ResultSetMetaData rsmd = rs.getMetaData();
         for (int i = 1; i <= rsmd.getColumnCount(); i++) {

@@ -16,10 +16,11 @@ repositories {
     maven {
         url = uri('https://repo.maven.apache.org/maven2/')
     }
+    mavenCentral()
 }
 
 dependencies {
-    implementation 'org.mongodb:mongo-java-driver:2.12.3'
+    implementation 'org.mongodb:mongo-java-driver:3.12.10'
     implementation 'org.postgresql:postgresql:42.3.3'
     implementation 'org.apache.commons:commons-dbcp2:2.9.0'
 
