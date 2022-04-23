@@ -1,35 +1,32 @@
 package database;
 
+import converter.ToPostgreSQLTypeConverter;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.ForeignKeyDTO;
 import dto.TableDTO;
-import merger.DBMerger;
-import merger.impl.DBMergerImpl;
-import org.postgresql.ds.PGConnectionPoolDataSource;
 import transformer.DBTransformer;
-import transformer.impl.ToPostgreDBTransformer;
-
+import transformer.impl.ToPostgresDBTransformer;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-public class PostgreSQL
-      extends Database {
+public class PostgreSQL extends Database {
     
     private final DatabaseMetaData metaData;
-    private final PGConnectionPoolDataSource connectionPool;
+    private final Connection connection;
     
-    public PostgreSQL(PGConnectionPoolDataSource connectionPool) throws SQLException {
-        this.dbTransformer = new ToPostgreDBTransformer();
-        this.dbMerger = new DBMergerImpl();
-        metaData = connectionPool.getConnection().getMetaData();
-        this.connectionPool = connectionPool;
+    public PostgreSQL(Connection connection, List<String> names) throws SQLException {
+        super(names);
+        this.dbTransformer = new ToPostgresDBTransformer();
+        metaData = connection.getMetaData();
+        this.connection = connection;
     }
     
-    public Connection getConnection() throws SQLException {
-        return connectionPool.getConnection();
+    public Connection getConnection() {
+        return connection;
     }
     
     @Override
@@ -38,71 +35,32 @@ public class PostgreSQL
     }
     
     @Override
-    public DBMerger getMerger() {
-        return this.dbMerger;
-    }
-    
-    @Override
     public DatabaseDTO makeDTO() throws SQLException {
-        return new DatabaseDTO(getAllTables(), connectionPool.getConnection().getMetaData().getURL());
+        return new DatabaseDTO(getAllTables());
     }
     
     protected Set<TableDTO> getAllTables() throws SQLException {
         Set<TableDTO> tables = new HashSet<>();
         for (String tableName : getAllTablesNames()) {
-            TableDTO tableDTO = new TableDTO(tableName, getAllTableFields(tableName));
-            tables.add(tableDTO);
+            if (names.contains(tableName)) {
+                TableDTO tableDTO = new TableDTO(tableName, getAllTableFields(tableName));
+                tables.add(tableDTO);
+            }
         }
         return tables;
     }
     
-    private ArrayList<String> getAllTablesNames() {
-        ArrayList<String> tableNames = new ArrayList<>();
-        try {
-            DatabaseMetaData metaData = connectionPool.getConnection().getMetaData();
-            ResultSet tablesMD = metaData.getTables(
-                  null,
-                  null,
-                  "%",
-                  new String[]{"TABLE"});
-            
-            while (tablesMD.next()) {
-                tableNames.add(tablesMD.getString("TABLE_NAME"));
-            }
-        }
-        catch (SQLException e) {
-            System.out.println("ERROR: " + e.getMessage());
-        }
-        return tableNames;
-    }
-    
-    protected ArrayList<FieldDTO> getAllTableFields(String tableName) throws SQLException {
+    private ArrayList<FieldDTO> getAllTableFields(String tableName) throws SQLException {
         ArrayList<FieldDTO> fields = new ArrayList<>();
-        Statement stmt = connectionPool.getConnection().createStatement();
-        ResultSet rs = stmt.executeQuery("select * from " + tableName);
-        ResultSetMetaData rsmd = rs.getMetaData();
-        for (int i = 1; i <= rsmd.getColumnCount(); i++) {
-            String columnName = rsmd.getColumnName(i);
-            String columnType = rsmd.getColumnTypeName(i);
-            FieldDTO fieldDTO = new FieldDTO(columnName, columnType, isPrimary(columnName, tableName), getFK(columnName, tableName));
+        ResultSet rs = metaData.getColumns(null, null, tableName, "%");
+        
+        while (rs.next()) {
+            String columnName = rs.getString(4);
+            int columnType = rs.getInt(5);
+            FieldDTO fieldDTO = new FieldDTO(columnName, ToPostgreSQLTypeConverter.getTypeWithName(columnType), isPrimary(columnName, tableName), getFK(columnName, tableName));
             fields.add(fieldDTO);
         }
         return fields;
-    }
-   
-    private boolean isPrimary(String columnName, String tableName) throws SQLException {
-        for (String key : getPK(tableName)) {
-            if (columnName.equals(key)) {return true;}
-        }
-        return false;
-    }
-    private ArrayList<String> getPK(String tableName) throws SQLException {
-        ArrayList<String> primaryKeys = new ArrayList<>();
-        ResultSet rs = metaData.getPrimaryKeys(null, null, tableName);
-        while (rs.next()) {
-            primaryKeys.add(rs.getString(4));
-        }
-        return primaryKeys;
     }
     
     private ForeignKeyDTO getFK(String columnName, String tableName) throws SQLException {
@@ -115,5 +73,32 @@ public class PostgreSQL
         return null;
     }
     
-   
+    private boolean isPrimary(String columnName, String tableName) throws SQLException {
+        for (String key : getTablePrimaryKeys(tableName)) {
+            if (columnName.equals(key))
+                return true;
+        }
+        return false;
+    }
+    
+    private ArrayList<String> getAllTablesNames() throws SQLException {
+        ArrayList<String> tablesNames = new ArrayList<>();
+        ResultSet rs = metaData.getTables(null, null, "%", new String[]{"TABLE"});
+        while (rs.next()) {
+            tablesNames.add(rs.getString(1));
+        }
+        return tablesNames;
+    }
+    
+    private ArrayList<String> getTablePrimaryKeys(String tableName) throws SQLException {
+        ArrayList<String> primaryKeys = new ArrayList<>();
+        ResultSet rs = metaData.getPrimaryKeys(null, null, tableName);
+        while (rs.next()) {
+            primaryKeys.add(rs.getString(4));
+        }
+        return primaryKeys;
+    }
+    
+    
 }
+

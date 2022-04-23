@@ -3,7 +3,8 @@ package database;
 import com.mongodb.*;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import converter.types.MongoTypes;
+import converter.ToMongoDBTypeConverter;
+import converter.types.FieldDTOMongoDBTypes;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.ForeignKeyDTO;
@@ -26,7 +27,8 @@ public class MongoDB extends Database {
     private static final String documentDefName = "document";
     private static final String delimiter = "_";
     
-    public MongoDB(MongoClient mongoClient) throws SQLException, UnknownHostException {
+    public MongoDB(MongoClient mongoClient, List<String> names) throws SQLException, UnknownHostException {
+        super(names);
         this.mongoClient = mongoClient;
         this.dbTransformer = new ToMongoDBTransformer();
     }
@@ -83,7 +85,7 @@ public class MongoDB extends Database {
     private void makeTableFromSubObject(DBObject subObject, String tableName){
     
         ArrayList<FieldDTO> fields = new ArrayList<>();
-        //fields.add(new FieldDTO(documentIdFieldName, MongoTypes.OBJECT_ID, true, null));
+        fields.add(new FieldDTO(documentIdFieldName, FieldDTOMongoDBTypes.OBJECT_ID, true, null));
         
         for (String key : subObject.keySet()) {
             String relTableName = tableName + key;
@@ -91,16 +93,15 @@ public class MongoDB extends Database {
             
             //if it's object
             if (field instanceof DBObject) {
-//                fields.add(
-//                      new FieldDTO(key + documentIdFieldName, MongoTypes.OBJECT_ID, true,
-//                      new ForeignKeyDTO(relTableName, documentIdFieldName)));
+                fields.add(
+                      new FieldDTO(key + documentIdFieldName, FieldDTOMongoDBTypes.STRING, true,
+                                   new ForeignKeyDTO(relTableName, documentIdFieldName)));
     
                 makeTableFromSubObject((DBObject) field, relTableName);
                 
             //if not object
             }else {
-                
-                fields.add(new FieldDTO(key, 1, false, null));
+                fields.add(new FieldDTO(key, ToMongoDBTypeConverter.getTypeWithClass(field.getClass()), false, null));
             }
         }
         
@@ -112,9 +113,9 @@ public class MongoDB extends Database {
         String name = generateDocumentName(document);
         ArrayList<FieldDTO> fields = new ArrayList<>();
         
-//        fields.add(
-//              new FieldDTO(collectionFieldName, MongoTypes.STRING, false,
-//              new ForeignKeyDTO(collectionTableName, collectionFieldName)));
+        fields.add(
+              new FieldDTO(collectionFieldName, FieldDTOMongoDBTypes.STRING, false,
+              new ForeignKeyDTO(collectionTableName, collectionFieldName)));
         
         for (String key : document.keySet()) {
             String subObjectName = name + delimiter + key;
@@ -124,16 +125,17 @@ public class MongoDB extends Database {
             if (field instanceof DBObject) {
                 if (key.equals(documentIdFieldName)){
                     fields.add(
-                          new FieldDTO(key, 1, true,
+                          new FieldDTO(key, FieldDTOMongoDBTypes.STRING, true,
                           new ForeignKeyDTO(subObjectName, documentIdFieldName)));
                 }else {
+                    // TODO: 23.04.2022 check PK 
                     fields.add(
-                          new FieldDTO(key + documentIdFieldName, 1, true,
+                          new FieldDTO(key + documentIdFieldName, , true,
                           new ForeignKeyDTO(subObjectName, documentIdFieldName)));
                 }
                 makeTableFromSubObject((DBObject) field, subObjectName);
             //if not object
-            }else fields.add(new FieldDTO(key, 1, false, null));
+            }else fields.add(new FieldDTO(key, ToMongoDBTypeConverter.getTypeWithClass(field.getClass()), false, null));
         }
         tables.add(new TableDTO(name, fields));
     }
@@ -151,7 +153,9 @@ public class MongoDB extends Database {
         Set<MongoCollection<Document>> collections = new HashSet<>();
         for (MongoDatabase db : getAllDB()) {
             for (String collectionName :  db.listCollectionNames()) {
-                collections.add(db.getCollection(collectionName));
+                if (names.contains(collectionName)) {
+                    collections.add(db.getCollection(collectionName));
+                }
             }
         }
         return collections;
