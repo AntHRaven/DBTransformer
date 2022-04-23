@@ -4,13 +4,10 @@ import data.TableData;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.TableDTO;
-
-import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class Provider {
+public class Provider {
     
     protected final DatabaseDTO databaseDTO;
     
@@ -26,8 +23,6 @@ public abstract class Provider {
             databaseMetadata.put(new TableData(tableDTO.getName(), tableDTO), fields);
         }
     }
-    
-    public abstract ArrayList<ArrayList<Map<FieldDTO, Object>>> getTableRows(TableDTO table) throws SQLException;
     
     private boolean isUniqueTableName(String name){
         for (TableDTO tableDTO : databaseDTO.getTables()) {

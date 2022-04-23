@@ -48,7 +48,7 @@ public class Main {
         MongoDatabase database2 = mongoClient2.getDatabase("DBName");
         MongoCollection<Document> collection2 = database.getCollection("CollName");
         
-        Database from = new MongoDB(mongoClient);
+        //Database from = new MongoDB(mongoClient);
         //Database to = new PostgreSQL(postgresqlConnection);
         for (Document doc : collection2.find()) {
             ArrayList<Class> types = new ArrayList<>();
