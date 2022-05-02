@@ -1,9 +1,15 @@
 package transformer.impl;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+import data.TableData;
+import data.provider.Provider;
 import database.Database;
 import database.PostgreSQL;
 import dto.DatabaseDTO;
@@ -15,6 +21,58 @@ public class ToPostgresDBTransformer implements DBTransformer {
     
     private DatabaseDTO databaseDTO;
     private Connection connection;
+    
+    public void fillAllData(){
+        //can do more threads here (for current table)
+        databaseDTO.provider.databaseMetadata.forEach((tableData, fields) ->
+            {
+                try {
+                    fillTableData(tableData.getOldName(), tableData.getTableDTO().getName(), fields);
+                } catch (SQLException e) {
+                    //nothing?
+                }
+            }
+        );
+    }
+    
+    public void fillTableData(String oldTableName, String newTableName, Map<String, FieldDTO> fields) throws SQLException {
+        Statement statement = connection.createStatement();
+        String selectQuery = "SELECT " + getListOfOldFieldsNames(fields) + " FROM " + oldTableName;
+        ResultSet table = statement.executeQuery(selectQuery);
+    
+        ArrayList<String> values = new ArrayList<>();
+        for (String oldFieldName : fields.keySet()) {
+            while (table.next()){
+                values.add(table.getString(oldFieldName));
+            }
+        }
+        String insertQuery = "INSERT INTO " + newTableName + "(" + getListOfNewFieldsNames(fields) + ") VALUES (" + getListOfValues(values) + ")";
+        statement.executeQuery(insertQuery);
+    }
+    
+    private String getListOfOldFieldsNames(Map<String, FieldDTO> fields){
+        StringBuilder list = new StringBuilder();
+        for (String key : fields.keySet()) {
+            list.append(key).append(", ");
+        }
+        return list.substring(0, list.length() - 2);
+    }
+    
+    private String getListOfNewFieldsNames(Map<String, FieldDTO> fields){
+        StringBuilder list = new StringBuilder();
+        for (String key : fields.keySet()) {
+            list.append(fields.get(key).getName()).append(", ");
+        }
+        return list.substring(0, list.length() - 2);
+    }
+    
+    private String getListOfValues(ArrayList<String> values){
+        StringBuilder list = new StringBuilder();
+        for (String val : values) {
+            list.append("'").append(val).append("'").append(", ");
+        }
+        return list.substring(0, list.length() - 2);
+    }
     
     @Override
     public void transform(Database from, Database to) throws SQLException {

@@ -42,29 +42,40 @@ public class Provider {
         return true;
     }
     
-    private boolean updateTableName(String oldTableName, String newTableName){
+    public void updateTableName(String oldTableName, String newTableName){
         for (TableData tableData : databaseMetadata.keySet()) {
             if (tableData.getOldName().equals(oldTableName)){
                 if (isUniqueTableName(newTableName)) {
                     tableData.getTableDTO().setName(newTableName);
-                    return true;
                 }
             }
         }
-        return false;
     }
     
-    private boolean updateFieldName(String oldFieldName, String newFieldName, TableDTO tableDTO){
+    public void updateFieldName(String oldFieldName, String newFieldName, TableDTO tableDTO){
         for (TableData tableData : databaseMetadata.keySet()) {
             if (tableData.getTableDTO().equals(tableDTO)){
                 if (isUniqueFieldName(newFieldName, tableDTO)) {
                     FieldDTO fieldDTO = databaseMetadata.get(tableData).get(oldFieldName);
                     fieldDTO.setName(newFieldName);
-                    return true;
                 }
             }
         }
-        return false;
     }
     
+    public void deleteTable(String tableName){
+        for (TableData table : databaseMetadata.keySet()) {
+            if (table.getTableDTO().getName().equals(tableName)){
+                databaseMetadata.remove(table);
+            }
+        }
+    }
+    
+    public  void deleteField(String tableName, String fieldName){
+        for (TableData table : databaseMetadata.keySet()) {
+            if (table.getTableDTO().getName().equals(tableName)){
+                databaseMetadata.get(table).remove(fieldName);
+            }
+        }
+    }
 }
