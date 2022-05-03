@@ -39,15 +39,16 @@ public class ToPostgresDBTransformer implements DBTransformer {
         Statement statement = connection.createStatement();
         String selectQuery = "SELECT " + getListOfOldFieldsNames(fields) + " FROM " + oldTableName;
         ResultSet table = statement.executeQuery(selectQuery);
-    
-        ArrayList<String> values = new ArrayList<>();
-        for (String oldFieldName : fields.keySet()) {
-            while (table.next()){
+        
+        while (table.next()){
+            ArrayList<String> values = new ArrayList<>();
+            for (String oldFieldName : fields.keySet()) {
                 values.add(table.getString(oldFieldName));
             }
+            String insertOneRowQuery =
+                  "INSERT INTO " + newTableName + "(" + getListOfNewFieldsNames(fields) + ") VALUES (" + getListOfValues(values) + ")";
+            statement.executeQuery(insertOneRowQuery);
         }
-        String insertQuery = "INSERT INTO " + newTableName + "(" + getListOfNewFieldsNames(fields) + ") VALUES (" + getListOfValues(values) + ")";
-        statement.executeQuery(insertQuery);
     }
     
     private String getListOfOldFieldsNames(Map<String, FieldDTO> fields){
