@@ -1,73 +1,48 @@
-import com.mongodb.MongoClient;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
 import database.Database;
-import database.MongoDB;
-import com.mongodb.*;
-import org.bson.Document;
+import database.PostgreSQL;
+import dto.DatabaseDTO;
+import dto.FieldDTO;
+import dto.TableDTO;
+import manager.DBTManager;
+import org.postgresql.ds.PGConnectionPoolDataSource;
 
-import java.net.UnknownHostException;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.*;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Main {
     
-    public static void main(String[] args) throws SQLException, UnknownHostException {
-        //MongoClient mongoClient = new MongoClient("");
-        //Connection postgresqlConnection = DriverManager.getConnection("", "", "");
-//        MongoClient mongoClient = new MongoClient(new MongoClientURI("mon_idgodb://localhost:27017"));
-//        Connection postgresqlConnection = DriverManager.getConnection("", "", "");
+    public static void main(String[] args) throws SQLException {
+        
+        PGConnectionPoolDataSource postgresqlConnectionFrom = new PGConnectionPoolDataSource();
+        postgresqlConnectionFrom.setURL("jdbc:postgresql://ec2-52-209-185-5.eu-west-1.compute.amazonaws.com:5432/d8lbn6g1mlieem");
+        postgresqlConnectionFrom.setUser("mjjqqxjrytjlac");
+        postgresqlConnectionFrom.setPassword("66ea5529ab3eae3617f373c5d65633f6479d378f6c5a9c6451bfefeee28287ed");
 //
-//        Database from = new MongoDB(mongoClient);
-//        Database to = new PostgreSQL(postgresqlConnection);
-//
-//        DBTManager.transform(from, to);
+        PGConnectionPoolDataSource postgresqlConnectionTo = new PGConnectionPoolDataSource();
+        postgresqlConnectionTo.setURL("jdbc:postgresql://localhost:5432/db_converter_postgres");
+        postgresqlConnectionTo.setUser("postgres");
+        postgresqlConnectionTo.setPassword("12345");
         
-        MongoClient mongoClient = new MongoClient(new MongoClientURI("mongodb://localhost:27017"));
-        MongoDatabase database = mongoClient.getDatabase("DBName");
-        MongoCollection<Document> collection = database.getCollection("CollName");
-        Set< String> books = new HashSet<>();
+        PGConnectionPoolDataSource postgresqlConnectionMerged = new PGConnectionPoolDataSource();
+        postgresqlConnectionMerged.setURL("jdbc:postgresql://localhost:5432/testMergedDB");
+        postgresqlConnectionMerged.setUser("postgres");
+        postgresqlConnectionMerged.setPassword("12345");
         
-        Date date = new Date(777);
-        String date2 = "1985.06.28";
-        books.add("kkk");
-        Document person = new Document("_id", date2)
-              .append("name", 25.8)
-                    .append("books", books);
-        
-        //collection.insertOne(person);
-        
-        //System.out.println(collection);
-    
-    
-        MongoClient mongoClient2 = new MongoClient(new MongoClientURI("mongodb://localhost:27017"));
-        MongoDatabase database2 = mongoClient2.getDatabase("DBName");
-        MongoCollection<Document> collection2 = database.getCollection("CollName");
-        
-        //Database from = new MongoDB(mongoClient);
-        //Database to = new PostgreSQL(postgresqlConnection);
-        for (Document doc : collection2.find()) {
-            ArrayList<Class> types = new ArrayList<>();
-    
-            for (String key : doc.keySet()) {
-                System.out.println(doc.get(key).getClass());
+        Database postgre1 = new PostgreSQL(postgresqlConnectionFrom);
+        Database postgre2 = new PostgreSQL(postgresqlConnectionTo);
+        Database merged = new PostgreSQL(postgresqlConnectionMerged);
+        List<DatabaseDTO> list = new ArrayList<>();
+        list.add(postgre1.makeDTO());
+        list.add(postgre2.makeDTO());
+        DBTManager DBTManager = new DBTManager();
+        for (TableDTO tableDTO : DBTManager.getMergedDto(list).getTables()) {
+            System.out.println(tableDTO.getName());
+            for (FieldDTO fieldDTO : tableDTO.getFields()) {
+                System.out.println(fieldDTO);
             }
-//
-//            doc.values().stream().map(Object::getClass).collect(types);
-//            System.out.println(types);
-            System.out.println("\n");
-            //System.out.println(generateDocumentName(doc, "DOCUMENT"));
         }
-        
-        
-        
-        
-//        DBTManager DBTManager = new DBTManager();
-//        DBTManager.transform(from, to);
-    }
+//        DBTManager.merge(list, merged);
     
+    }
 }

@@ -1,7 +1,6 @@
 package merger.impl;
 
 import database.Database;
-import database.PostgreSQL;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.TableDTO;
@@ -18,7 +17,7 @@ public class DBMergerImpl
       implements DBMerger {
     
     @Override
-    public DatabaseDTO getMergedDto(List<DatabaseDTO> databaseList, Database to) throws SQLException {
+    public DatabaseDTO getMergedDto(List<DatabaseDTO> databaseList) throws SQLException {
         List<TableDTO> tableDTOS = new ArrayList<>();
         
         for (DatabaseDTO databaseDTO : databaseList) {
@@ -29,10 +28,9 @@ public class DBMergerImpl
               .stream()
               .map(TableDTO::getName)
               .collect(Collectors.toSet());
-        
+    
         DatabaseDTO databaseDTO = new DatabaseDTO();
         Set<TableDTO> tables = new HashSet<>();
-        
         
         for (String tableName : allUniqueTableNames) {
             if (getTablesByName(tableDTOS, tableName).size() > 1) {
@@ -45,6 +43,7 @@ public class DBMergerImpl
         
         databaseDTO.setTables(tables);
         return databaseDTO;
+        
     }
     
     @Override
@@ -54,10 +53,6 @@ public class DBMergerImpl
     
     private List<TableDTO> getTablesByName(List<TableDTO> tableDTOS, String name) {
         return tableDTOS.stream().filter((item) -> item.getName().equals(name)).collect(Collectors.toList());
-    }
-    
-    private List<FieldDTO> getFieldsByName(List<FieldDTO> fieldDTOS, String name) {
-        return fieldDTOS.stream().filter((item) -> item.getName().equals(name)).collect(Collectors.toList());
     }
     
     private TableDTO joiningTables(List<TableDTO> tableDTOS, String tableName) {
@@ -70,7 +65,6 @@ public class DBMergerImpl
         
         table.setName(tableName);
         table.setFields(new ArrayList<>(fieldDTOS));
-        
         return table;
     }
     

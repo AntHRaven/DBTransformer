@@ -8,14 +8,14 @@ import dto.TableDTO;
 import java.sql.Types;
 
 public class ToPostgreSQLTypeConverter {
-    
-    public void convertAllFields(DatabaseDTO databaseDTO){
-        for (TableDTO table : databaseDTO.getTables()) {
-            for (FieldDTO field : table.getFields()) {
-                field.setType(convert((FieldDTOMongoDBTypes) field.getType()));
-            }
-        }
-    }
+
+//    public void convertAllFields(DatabaseDTO databaseDTO){
+//        for (TableDTO table : databaseDTO.getTables()) {
+//            for (FieldDTO field : table.getFields()) {
+//                field.setType(convert((FieldDTOMongoDBTypes) field.getType()));
+//            }
+//        }
+//    }
     
     private FieldDTOPostgreSQLTypes convert(FieldDTOMongoDBTypes type){
         switch (type){
