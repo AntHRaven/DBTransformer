@@ -17,7 +17,6 @@ public class MongoDBDataProvider extends Provider {
         this.mongoClient = mongoClient;
     }
     
-    @Override
     public ArrayList<ArrayList<Map<FieldDTO, Object>>> getTableRows(TableDTO table) {
         return null;
     }

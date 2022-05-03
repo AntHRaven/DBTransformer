@@ -21,7 +21,6 @@ public class PostgreSQLDataProvider extends Provider {
         this.connection = connection;
     }
     
-    @Override
     public ArrayList<ArrayList<Map<FieldDTO, Object>>> getTableRows(TableDTO table) throws SQLException {
         ArrayList<ArrayList<Map<FieldDTO, Object>>> tableRows = new ArrayList<>();
         Statement stmt = connection.createStatement();

@@ -13,3 +13,4 @@ public interface DBTransformer {
     void transform(DatabaseDTO from, Database to) throws SQLException;
     
 }
+

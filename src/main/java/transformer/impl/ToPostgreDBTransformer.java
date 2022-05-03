@@ -9,7 +9,6 @@ import transformer.DBTransformer;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
@@ -19,7 +18,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class ToPostgreDBTransformer
       implements DBTransformer {
     
-    private static final ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
+    private static final ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
     
     
     @Override
@@ -53,7 +52,8 @@ public class ToPostgreDBTransformer
         
         executor.invokeAll(callablesCreateTableTasks);
         executor.invokeAll(callablesAddForeignKeysTasks);
-        executor.shutdown();
+        callablesAddForeignKeysTasks.clear();
+        callablesCreateTableTasks.clear();
     }
     
     private String generateSQLFields(List<FieldDTO> fields) {
@@ -100,6 +100,11 @@ public class ToPostgreDBTransformer
     }
     
     public String generateSQLCreateTable(TableDTO table) {
+        System.out.println("create table if not exists " +
+                           table.getName() +
+                           " ( " +
+                           generateSQLFields(table.getFields()) +
+                           "); ");
         return "create table if not exists " +
                table.getName() +
                " ( " +
@@ -142,11 +147,6 @@ public class ToPostgreDBTransformer
             return null;
         }
     }
-    
-    
-    
-    
-    
     
     
 }

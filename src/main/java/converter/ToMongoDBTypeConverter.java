@@ -13,15 +13,15 @@ import java.util.ArrayList;
 import java.util.Date;
 
 public class ToMongoDBTypeConverter {
-    
-    public void convertAllFields(DatabaseDTO databaseDTO){
-        for (TableDTO table : databaseDTO.getTables()) {
-            for (FieldDTO field : table.getFields()) {
-                field.setType(convert((FieldDTOPostgreSQLTypes) field.getType()));
-            }
-        }
-        
-    }
+
+//    public void convertAllFields(DatabaseDTO databaseDTO){
+//        for (TableDTO table : databaseDTO.getTables()) {
+//            for (FieldDTO field : table.getFields()) {
+//                field.setType(convert((FieldDTOPostgreSQLTypes) field.getType()));
+//            }
+//        }
+//
+//    }
     
     private static FieldDTOMongoDBTypes convert(FieldDTOPostgreSQLTypes type){
         switch (type){

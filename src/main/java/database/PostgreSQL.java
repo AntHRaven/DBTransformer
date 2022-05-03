@@ -1,17 +1,21 @@
 package database;
 
+import converter.ToPostgreSQLTypeConverter;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.ForeignKeyDTO;
 import dto.TableDTO;
+import org.postgresql.ds.PGConnectionPoolDataSource;
 import transformer.DBTransformer;
-import transformer.impl.ToPostgresDBTransformer;
+import transformer.impl.ToPostgreDBTransformer;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.Callable;
 
 public class PostgreSQL
       extends Database {
@@ -19,10 +23,11 @@ public class PostgreSQL
     private final DatabaseMetaData metaData;
     private final PGConnectionPoolDataSource connectionPool;
     
-    public PostgreSQL(Connection connection) throws SQLException {
-        this.dbTransformer = new ToPostgresDBTransformer();
-        metaData = connection.getMetaData();
-        this.connection = connection;
+    public PostgreSQL(PGConnectionPoolDataSource connectionPool) throws SQLException {
+//        super(names);
+        this.dbTransformer = new ToPostgreDBTransformer();
+        metaData = connectionPool.getConnection().getMetaData();
+        this.connectionPool = connectionPool;
     }
     
     public Connection getConnection() throws SQLException {
@@ -35,11 +40,6 @@ public class PostgreSQL
     }
     
     @Override
-    public DBMerger getMerger() {
-        return this.dbMerger;
-    }
-    
-    @Override
     public DatabaseDTO makeDTO() throws SQLException {
         return new DatabaseDTO(getAllTables(), connectionPool.getConnection().getMetaData().getURL());
     }
@@ -47,10 +47,8 @@ public class PostgreSQL
     protected Set<TableDTO> getAllTables() throws SQLException {
         Set<TableDTO> tables = new HashSet<>();
         for (String tableName : getAllTablesNames()) {
-            if (names.contains(tableName)) {
-                TableDTO tableDTO = new TableDTO(tableName, getAllTableFields(tableName));
-                tables.add(tableDTO);
-            }
+            TableDTO tableDTO = new TableDTO(tableName, getAllTableFields(tableName));
+            tables.add(tableDTO);
         }
         return tables;
     }
@@ -62,12 +60,17 @@ public class PostgreSQL
         while (rs.next()) {
             String columnName = rs.getString(4);
             int columnType = rs.getInt(5);
-            FieldDTO fieldDTO = new FieldDTO(columnName, ToPostgreSQLTypeConverter.getTypeWithName(columnType), isPrimary(columnName, tableName), getFK(columnName, tableName));
+            FieldDTO fieldDTO = new FieldDTO(
+                  columnName,
+                  ToPostgreSQLTypeConverter.getTypeWithName(columnType).getType(),
+                  isPrimary(columnName, tableName),
+                  getFK(columnName, tableName)
+            );
             fields.add(fieldDTO);
         }
         return fields;
     }
-   
+    
     private boolean isPrimary(String columnName, String tableName) throws SQLException {
         for (String key : getPK(tableName)) {
             if (columnName.equals(key)) {return true;}
@@ -75,11 +78,21 @@ public class PostgreSQL
         return false;
     }
     
+    private ArrayList<String> getPK(String tableName) throws SQLException {
+        ArrayList<String> primaryKeys = new ArrayList<>();
+        ResultSet rs = metaData.getPrimaryKeys(null, null, tableName);
+        while (rs.next()) {
+            primaryKeys.add(rs.getString(4));
+        }
+        return primaryKeys;
+    }
+    
+    
     private ArrayList<String> getAllTablesNames() throws SQLException {
         ArrayList<String> tablesNames = new ArrayList<>();
         ResultSet rs = metaData.getTables(null, null, "%", new String[]{"TABLE"});
-        while(rs.next()) {
-            tablesNames.add(rs.getString(1));
+        while (rs.next()) {
+            tablesNames.add(rs.getString(3));
         }
         return tablesNames;
     }
@@ -103,5 +116,5 @@ public class PostgreSQL
         return null;
     }
     
-   
+    
 }

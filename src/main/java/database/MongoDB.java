@@ -9,6 +9,8 @@ import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.ForeignKeyDTO;
 import dto.TableDTO;
+import merger.DBMerger;
+import merger.impl.DBMergerImpl;
 import org.bson.Document;
 import transformer.DBTransformer;
 import transformer.impl.ToMongoDBTransformer;
@@ -28,7 +30,7 @@ public class MongoDB extends Database {
     private static final String delimiter = "_";
     
     public MongoDB(MongoClient mongoClient, List<String> names) throws SQLException, UnknownHostException {
-        super(names);
+//        super(names);
         this.mongoClient = mongoClient;
         this.dbTransformer = new ToMongoDBTransformer();
     }
@@ -85,7 +87,7 @@ public class MongoDB extends Database {
     private void makeTableFromSubObject(DBObject subObject, String tableName){
     
         ArrayList<FieldDTO> fields = new ArrayList<>();
-        fields.add(new FieldDTO(documentIdFieldName, FieldDTOMongoDBTypes.OBJECT_ID, true, null));
+        fields.add(new FieldDTO(documentIdFieldName, FieldDTOMongoDBTypes.OBJECT_ID.name(), true, null));
         
         for (String key : subObject.keySet()) {
             String relTableName = tableName + key;
@@ -94,14 +96,14 @@ public class MongoDB extends Database {
             //if it's object
             if (field instanceof DBObject) {
                 fields.add(
-                      new FieldDTO(key + documentIdFieldName, FieldDTOMongoDBTypes.STRING, true,
+                      new FieldDTO(key + documentIdFieldName, FieldDTOMongoDBTypes.STRING.name(), true,
                                    new ForeignKeyDTO(relTableName, documentIdFieldName)));
     
                 makeTableFromSubObject((DBObject) field, relTableName);
                 
             //if not object
             }else {
-                fields.add(new FieldDTO(key, ToMongoDBTypeConverter.getTypeWithClass(field.getClass()), false, null));
+                fields.add(new FieldDTO(key, ToMongoDBTypeConverter.getTypeWithClass(field.getClass()).name(), false, null));
             }
         }
         
@@ -114,7 +116,7 @@ public class MongoDB extends Database {
         ArrayList<FieldDTO> fields = new ArrayList<>();
         
         fields.add(
-              new FieldDTO(collectionFieldName, FieldDTOMongoDBTypes.STRING, false,
+              new FieldDTO(collectionFieldName, FieldDTOMongoDBTypes.STRING.name(), false,
               new ForeignKeyDTO(collectionTableName, collectionFieldName)));
         
         for (String key : document.keySet()) {
@@ -125,17 +127,17 @@ public class MongoDB extends Database {
             if (field instanceof DBObject) {
                 if (key.equals(documentIdFieldName)){
                     fields.add(
-                          new FieldDTO(key, FieldDTOMongoDBTypes.STRING, true,
+                          new FieldDTO(key, FieldDTOMongoDBTypes.STRING.name(), true,
                           new ForeignKeyDTO(subObjectName, documentIdFieldName)));
                 }else {
-                    // TODO: 23.04.2022 check PK 
-                    fields.add(
-                          new FieldDTO(key + documentIdFieldName, , true,
-                          new ForeignKeyDTO(subObjectName, documentIdFieldName)));
+                    // TODO: 23.04.2022 check PK
+//                    fields.add(
+//                          new FieldDTO(key + documentIdFieldName, , true,
+//                          new ForeignKeyDTO(subObjectName, documentIdFieldName)));
                 }
                 makeTableFromSubObject((DBObject) field, subObjectName);
             //if not object
-            }else fields.add(new FieldDTO(key, ToMongoDBTypeConverter.getTypeWithClass(field.getClass()), false, null));
+            }else fields.add(new FieldDTO(key, ToMongoDBTypeConverter.getTypeWithClass(field.getClass()).name(), false, null));
         }
         tables.add(new TableDTO(name, fields));
     }
