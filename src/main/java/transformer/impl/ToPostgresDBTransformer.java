@@ -24,7 +24,7 @@ public class ToPostgresDBTransformer implements DBTransformer {
     
     public void fillAllData(){
         //can do more threads here (for current table)
-        databaseDTO.provider.databaseMetadata.forEach((tableData, fields) ->
+        databaseDTO.provider.getDatabaseMetadata().forEach((tableData, fields) ->
             {
                 try {
                     fillTableData(tableData.getOldName(), tableData.getTableDTO().getName(), fields);

@@ -4,14 +4,17 @@ import data.TableData;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.TableDTO;
+import lombok.Data;
+
 import java.util.HashMap;
 import java.util.Map;
 
+@Data
 public class Provider {
     
     protected final DatabaseDTO databaseDTO;
     
-    public Map<TableData, Map<String, FieldDTO>> databaseMetadata;
+    private Map<TableData, Map<String, FieldDTO>> databaseMetadata;
     
     public Provider(DatabaseDTO databaseDTO){
         this.databaseDTO = databaseDTO;
