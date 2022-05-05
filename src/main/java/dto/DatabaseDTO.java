@@ -14,6 +14,14 @@ public class DatabaseDTO implements Cloneable{
   Set<TableDTO> tables;
   public Provider provider;
   private Class<? extends Database> marker;
+  // TODO: 05.05.2022 think over
+  private String url;
+  
+  // TODO: 05.05.2022 think over
+  public DatabaseDTO(Set<TableDTO> tables, String url){
+    this.tables = tables;
+    this.url = url;
+  }
   
   public DatabaseDTO(Set<TableDTO> tables, Class<? extends Database> marker){
     this.tables = tables;

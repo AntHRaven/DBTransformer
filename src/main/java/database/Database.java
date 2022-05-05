@@ -1,6 +1,7 @@
 package database;
 
 import dto.DatabaseDTO;
+import merger.DBMerger;
 import transformer.DBTransformer;
 import java.sql.SQLException;
 import java.util.List;

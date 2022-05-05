@@ -24,9 +24,12 @@ public class ToMongoDBTransformer implements DBTransformer {
     
     @Override
     public void transform(Database from, Database to) throws SQLException {
-        if (!(to instanceof MongoDB)) return;
+        if (!(to instanceof MongoDB)) {return;}
         
         databaseDTO = from.makeDTO();
+    
+        // TODO: 05.05.2022 no mongo for both
+        // do as in ToPostgreSQLTransformer
         mongoClientTo = ((MongoDB) to).getMongoClient();
         mongoClientFrom = ((MongoDB) from).getMongoClient();
         
@@ -48,19 +51,18 @@ public class ToMongoDBTransformer implements DBTransformer {
         List<Document> documents = new ArrayList<>();
         
         for (FieldDTO field : table.getFields()) {
-            if (field.isPK()){
-                if (field.getFK() == null){
+            if (field.isPK()) {
+                if (field.getFK() == null) {
                     Map<String, Object> fields = new HashMap<>();
                     documents.add(new Document());
-                }else{
+                } else {
                 
                 }
-            }else{
+            } else {
                 if (field.getFK() == null){
                 
                 
-                
-                }else{
+                } else {
                 
                 }
             }
@@ -69,36 +71,11 @@ public class ToMongoDBTransformer implements DBTransformer {
         
     }
     
-    private void createAllDocuments(){
+    private void createAllDocuments() {
         for (TableDTO table : databaseDTO.getTables()) {
             createDocument(table);
         }
-        //из каждой таблицы сделать отдельный документ
-        //ключ не трогать, пусть сам генерится
-        //праймари будет просто отдельным полем
-        
-        /*
-        таблица
-        имя   возраст пк
-        катя  14      1
-        оля   19      2
-        маша  2       3
-        
-        получаем коллекцию = с именем таблицы
-        
-        {_id = пк,
-         имя = катя,
-         возраст = 14
-         }
-         
-         и тд
-         
-         если есть вложенная таблица
-         то генерируем
-         релфилд = {сюда поля релтаблицы, кроме _id}
-         добавлять рекурсивно
-        
-         */
+ 
     }
     
 }

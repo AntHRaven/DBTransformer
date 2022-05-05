@@ -16,9 +16,12 @@ import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.TableDTO;
 import transformer.DBTransformer;
+import java.util.concurrent.*;
 
-public class ToPostgresDBTransformer implements DBTransformer {
+public class ToPostgreSQLDBTransformer implements DBTransformer {
     
+    // TODO: 05.05.2022 for me (look) 
+    private static final ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
     private DatabaseDTO databaseDTO;
     private Connection connectionTo;
     private Database from;
@@ -141,18 +144,24 @@ public class ToPostgresDBTransformer implements DBTransformer {
     
     // creating tables
     
-    private void createTables() throws SQLException {
-        StringBuilder createAllTablesSQL = new StringBuilder();
-        StringBuilder addAllForeignKeysSQL = new StringBuilder();
+    private void createTables(DatabaseDTO databaseDTO, Database to) throws SQLException, InterruptedException {
+        // TODO: 05.05.2022 for me (look) 
+        LinkedBlockingQueue<Callable<String>> callablesCreateTableTasks = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<Callable<String>> callablesAddForeignKeysTasks = new LinkedBlockingQueue<>();
         
         for (TableDTO table : databaseDTO.getTables()) {
-            createAllTablesSQL.append(generateSQLCreateTable(table));
-            addAllForeignKeysSQL.append(generateSQLForeignKeys(table));
+            callablesCreateTableTasks.add(new GenerateSQLCreateTableTask(table, ((PostgreSQL) to).getConnection()));
+            callablesAddForeignKeysTasks.add(new GenerateSQLForeignKeysTask(table, ((PostgreSQL) to).getConnection()));
         }
-        Statement statement = connectionTo.createStatement();
-        statement.executeUpdate(createAllTablesSQL.toString());
-        statement.executeUpdate(addAllForeignKeysSQL.toString());
-        statement.close();
+        // TODO: 05.05.2022 we dont need it? 
+//        Statement statement = connectionTo.createStatement();
+//        statement.executeUpdate(createAllTablesSQL.toString());
+//        statement.executeUpdate(addAllForeignKeysSQL.toString());
+//        statement.close();
+        
+        executor.invokeAll(callablesCreateTableTasks);
+        executor.invokeAll(callablesAddForeignKeysTasks);
+        executor.shutdown();
     }
     
     private String generateSQLFields(List<FieldDTO> fields) {
@@ -205,5 +214,44 @@ public class ToPostgresDBTransformer implements DBTransformer {
                generateSQLFields(table.getFields()) +
                "); ";
     }
+    
+    // TODO: 05.05.2022 for me (look at all methods below) 
+    public static class GenerateSQLCreateTableTask
+          implements Callable<String> {
+        TableDTO tableDTO;
+        Connection connection;
+        
+        public GenerateSQLCreateTableTask(TableDTO tableDTO, Connection connection) {
+            this.tableDTO = tableDTO;
+            this.connection = connection;
+        }
+        
+        @Override
+        public String call() throws SQLException, InterruptedException {
+            ToPostgreSQLDBTransformer toPostgresDBTransformer = new ToPostgreSQLDBTransformer();
+            System.out.println(toPostgresDBTransformer.generateSQLCreateTable(tableDTO));
+            connection.createStatement().executeQuery(toPostgresDBTransformer.generateSQLCreateTable(tableDTO));
+            return null;
+        }
+    }
+    
+    public static class GenerateSQLForeignKeysTask
+          implements Callable<String> {
+        TableDTO tableDTO;
+        Connection connection;
+        
+        public GenerateSQLForeignKeysTask(TableDTO tableDTO, Connection connection) {
+            this.tableDTO = tableDTO;
+            this.connection = connection;
+        }
+        
+        @Override
+        public String call() throws SQLException {
+            ToPostgreSQLDBTransformer toPostgresDBTransformer = new ToPostgreSQLDBTransformer();
+            connection.createStatement().executeQuery(toPostgresDBTransformer.generateSQLForeignKeys(tableDTO));
+            return null;
+        }
+    }
+    
     
 }
