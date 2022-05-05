@@ -50,10 +50,10 @@ public class PostgreSQL
     protected Set<TableDTO> getAllTables() throws SQLException {
         Set<TableDTO> tables = new HashSet<>();
         for (String tableName : getAllTablesNames()) {
-            if (names.contains(tableName)) {
+//            if (names.contains(tableName)) {
                 TableDTO tableDTO = new TableDTO(tableName, getAllTableFields(tableName));
                 tables.add(tableDTO);
-            }
+//            }
         }
         return tables;
     }
@@ -93,7 +93,7 @@ public class PostgreSQL
         ArrayList<String> tablesNames = new ArrayList<>();
         ResultSet rs = metaData.getTables(null, null, "%", new String[]{"TABLE"});
         while (rs.next()) {
-            tablesNames.add(rs.getString(1));
+            tablesNames.add(rs.getString(3));
         }
         return tablesNames;
     }
