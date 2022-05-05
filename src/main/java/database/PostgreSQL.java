@@ -7,7 +7,7 @@ import dto.ForeignKeyDTO;
 import dto.TableDTO;
 import org.postgresql.ds.PGConnectionPoolDataSource;
 import transformer.DBTransformer;
-import transformer.impl.ToPostgresDBTransformer;
+import transformer.impl.ToPostgreSQLDBTransformer;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -22,7 +22,13 @@ public class PostgreSQL
     
     public PostgreSQL(PGConnectionPoolDataSource connectionPool, List<String> names) throws SQLException {
 //        super(names);
-        this.dbTransformer = new ToPostgresDBTransformer();
+        this.dbTransformer = new ToPostgreSQLDBTransformer();
+        metaData = connectionPool.getConnection().getMetaData();
+        this.connectionPool = connectionPool;
+    }
+    
+    public PostgreSQL(PGConnectionPoolDataSource connectionPool) throws SQLException {
+        this.dbTransformer = new ToPostgreSQLDBTransformer();
         metaData = connectionPool.getConnection().getMetaData();
         this.connectionPool = connectionPool;
     }

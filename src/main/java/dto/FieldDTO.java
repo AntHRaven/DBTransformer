@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 public class FieldDTO {
     
     private String name;
-    private String type;
+    private FieldDTOTypes type;
     private boolean isPK;
     private ForeignKeyDTO FK;
     

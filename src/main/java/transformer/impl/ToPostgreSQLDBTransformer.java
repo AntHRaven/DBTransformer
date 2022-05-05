@@ -8,23 +8,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import data.TableData;
-import data.provider.Provider;
 import database.Database;
 import database.PostgreSQL;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
-import dto.ForeignKeyDTO;
 import dto.TableDTO;
 import transformer.DBTransformer;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.List;
 import java.util.concurrent.*;
 
-public class ToPostgresDBTransformer
+public class ToPostgreSQLDBTransformer
       implements DBTransformer {
     private static final ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
     private DatabaseDTO databaseDTO;
@@ -32,7 +25,7 @@ public class ToPostgresDBTransformer
     
     public void fillAllData(){
         //can do more threads here (for current table)
-        databaseDTO§.provider.getDatabaseMetadata().forEach((tableData, fields) ->
+        databaseDTO.provider.getDatabaseMetadata().forEach((tableData, fields) ->
             {
                 try {
                     fillTableData(tableData.getOldName(), tableData.getTableDTO().getName(), fields);
@@ -181,7 +174,7 @@ public class ToPostgresDBTransformer
         
         @Override
         public String call() throws SQLException, InterruptedException {
-            ToPostgresDBTransformer toPostgresDBTransformer = new ToPostgresDBTransformer();
+            ToPostgreSQLDBTransformer toPostgresDBTransformer = new ToPostgreSQLDBTransformer();
             connection.createStatement().executeQuery(toPostgresDBTransformer.generateSQLCreateTable(tableDTO));
             return null;
         }
@@ -199,7 +192,7 @@ public class ToPostgresDBTransformer
         
         @Override
         public String call() throws SQLException {
-            ToPostgresDBTransformer toPostgresDBTransformer = new ToPostgresDBTransformer();
+            ToPostgreSQLDBTransformer toPostgresDBTransformer = new ToPostgreSQLDBTransformer();
             connection.createStatement().executeQuery(toPostgresDBTransformer.generateSQLForeignKeys(tableDTO));
             return null;
         }

@@ -34,7 +34,7 @@ public class DBMergerImpl
         
         for (String tableName : allUniqueTableNames) {
             if (getTablesByName(tableDTOS, tableName).size() > 1) {
-                tables.add(joiningTables(getTablesByName(tableDTOS, tableName), tableName));x
+                tables.add(joiningTables(getTablesByName(tableDTOS, tableName), tableName));
             }
             else {
                 tables.addAll(getTablesByName(tableDTOS, tableName));
