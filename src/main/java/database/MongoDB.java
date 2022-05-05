@@ -59,7 +59,7 @@ public class MongoDB extends Database {
     
     private void makeTableCollections(){
         ArrayList<FieldDTO> fields = new ArrayList<>();
-        //fields.add(new FieldDTO(collectionFieldName, MongoTypes.STRING, true, null));
+        fields.add(new FieldDTO(collectionFieldName, FieldDTOMongoDBTypes.STRING, true, null));
         tables.add(new TableDTO(collectionTableName, fields));
     }
     
