@@ -36,7 +36,7 @@ public class PostgreSQL extends Database {
     
     @Override
     public DatabaseDTO makeDTO() throws SQLException {
-        return new DatabaseDTO(getAllTables());
+        return new DatabaseDTO(getAllTables(), this.getClass());
     }
     
     protected Set<TableDTO> getAllTables() throws SQLException {

@@ -12,8 +12,6 @@ import dto.TableDTO;
 import org.bson.Document;
 import transformer.DBTransformer;
 import transformer.impl.ToMongoDBTransformer;
-import java.net.UnknownHostException;
-import java.sql.SQLException;
 import java.util.*;
 
 public class MongoDB extends Database {
@@ -45,7 +43,7 @@ public class MongoDB extends Database {
     @Override
     public DatabaseDTO makeDTO() {
         makeAllTables();
-        return new DatabaseDTO(tables);
+        return new DatabaseDTO(tables, this.getClass());
     }
     
     private void makeAllTables(){
