@@ -1,13 +1,10 @@
 package database;
 
 import dto.DatabaseDTO;
-import dto.FieldDTO;
-import dto.ForeignKeyDTO;
-import dto.TableDTO;
+import merger.DBMerger;
 import transformer.DBTransformer;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 
 public abstract class Database {
@@ -19,7 +16,7 @@ public abstract class Database {
     
     abstract public DatabaseDTO makeDTO() throws SQLException;
     
-    Database(List<String> names){
-        this.names = names;
-    }
+//    Database(List<String> names){
+//        this.names = names;
+//    }
 }

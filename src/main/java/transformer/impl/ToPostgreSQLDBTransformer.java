@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import data.TableData;
-import data.provider.Provider;
 import database.Database;
 import database.PostgreSQL;
 import dto.DatabaseDTO;
@@ -17,8 +15,11 @@ import dto.FieldDTO;
 import dto.TableDTO;
 import transformer.DBTransformer;
 
-public class ToPostgresDBTransformer implements DBTransformer {
-    
+import java.util.concurrent.*;
+
+public class ToPostgreSQLDBTransformer
+      implements DBTransformer {
+    private static final ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
     private DatabaseDTO databaseDTO;
     private Connection connection;
     
@@ -75,27 +76,39 @@ public class ToPostgresDBTransformer implements DBTransformer {
         return list.substring(0, list.length() - 2);
     }
     
+    
     @Override
     public void transform(Database from, Database to) throws SQLException {
-        if (!(to instanceof PostgreSQL)) return;
-    
-        connection = ((PostgreSQL) to).getConnection();
-        databaseDTO = from.makeDTO();
-        createTables();
+        try {
+            createTables(from.makeDTO(), to);
+        }
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
     
-    private void createTables() throws SQLException {
-        StringBuilder createAllTablesSQL = new StringBuilder();
-        StringBuilder addAllForeignKeysSQL = new StringBuilder();
+    @Override
+    public void transform(DatabaseDTO from, Database to) throws SQLException {
+        try {
+            createTables(from, to);
+        }
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    private void createTables(DatabaseDTO databaseDTO, Database to) throws SQLException, InterruptedException {
+        LinkedBlockingQueue<Callable<String>> callablesCreateTableTasks = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<Callable<String>> callablesAddForeignKeysTasks = new LinkedBlockingQueue<>();
         
         for (TableDTO table : databaseDTO.getTables()) {
-            createAllTablesSQL.append(generateSQLCreateTable(table));
-            addAllForeignKeysSQL.append(generateSQLForeignKeys(table));
+            callablesCreateTableTasks.add(new GenerateSQLCreateTableTask(table, ((PostgreSQL) to).getConnection()));
+            callablesAddForeignKeysTasks.add(new GenerateSQLForeignKeysTask(table, ((PostgreSQL) to).getConnection()));
         }
-        Statement statement = connection.createStatement();
-        statement.executeUpdate(createAllTablesSQL.toString());
-        statement.executeUpdate(addAllForeignKeysSQL.toString());
-        statement.close();
+        
+        executor.invokeAll(callablesCreateTableTasks);
+        executor.invokeAll(callablesAddForeignKeysTasks);
+        executor.shutdown();
     }
     
     private String generateSQLFields(List<FieldDTO> fields) {
@@ -148,5 +161,42 @@ public class ToPostgresDBTransformer implements DBTransformer {
                generateSQLFields(table.getFields()) +
                "); ";
     }
+    
+    public static class GenerateSQLCreateTableTask
+          implements Callable<String> {
+        TableDTO tableDTO;
+        Connection connection;
+        
+        public GenerateSQLCreateTableTask(TableDTO tableDTO, Connection connection) {
+            this.tableDTO = tableDTO;
+            this.connection = connection;
+        }
+        
+        @Override
+        public String call() throws SQLException, InterruptedException {
+            ToPostgreSQLDBTransformer toPostgresDBTransformer = new ToPostgreSQLDBTransformer();
+            connection.createStatement().executeQuery(toPostgresDBTransformer.generateSQLCreateTable(tableDTO));
+            return null;
+        }
+    }
+    
+    public static class GenerateSQLForeignKeysTask
+          implements Callable<String> {
+        TableDTO tableDTO;
+        Connection connection;
+        
+        public GenerateSQLForeignKeysTask(TableDTO tableDTO, Connection connection) {
+            this.tableDTO = tableDTO;
+            this.connection = connection;
+        }
+        
+        @Override
+        public String call() throws SQLException {
+            ToPostgreSQLDBTransformer toPostgresDBTransformer = new ToPostgreSQLDBTransformer();
+            connection.createStatement().executeQuery(toPostgresDBTransformer.generateSQLForeignKeys(tableDTO));
+            return null;
+        }
+    }
+    
     
 }

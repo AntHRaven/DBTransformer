@@ -1,11 +1,5 @@
 package transformer.impl;
 
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -17,27 +11,37 @@ import dto.TableDTO;
 import org.bson.Document;
 import transformer.DBTransformer;
 
-import javax.print.Doc;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-public class ToMongoDBTransformer implements DBTransformer {
+public class ToMongoDBTransformer
+      implements DBTransformer {
     
     private DatabaseDTO databaseDTO;
     private MongoClient mongoClientTo;
     private MongoClient mongoClientFrom;
-   
+    
     
     @Override
     public void transform(Database from, Database to) throws SQLException {
-        if (!(to instanceof MongoDB)) return;
+        if (!(to instanceof MongoDB)) {return;}
         
         databaseDTO = from.makeDTO();
-        mongoClientTo = ((MongoDB) to).getMongoClient();
-        mongoClientFrom = ((MongoDB) from).getMongoClient();
+//        mongoClientTo = ((MongoDB) to).getMongoClient();
+//        mongoClientFrom = ((MongoDB) from).getMongoClient();
         
         createAllDocuments();
     }
     
-    private void createDocument(TableDTO table){
+    @Override
+    public void transform(DatabaseDTO from, Database to) throws SQLException {
+    
+    }
+    
+    private void createDocument(TableDTO table) {
         String DBName = mongoClientTo.listDatabaseNames().first();
         MongoDatabase db = mongoClientTo.getDatabase(DBName);
         
@@ -47,19 +51,21 @@ public class ToMongoDBTransformer implements DBTransformer {
         List<Document> documents = new ArrayList<>();
         
         for (FieldDTO field : table.getFields()) {
-            if (field.isPK()){
-                if (field.getFK() == null){
+            if (field.isPK()) {
+                if (field.getFK() == null) {
                     Map<String, Object> fields = new HashMap<>();
                     documents.add(new Document());
-                }else{
+                }
+                else {
                 
                 }
-            }else{
-                if (field.getFK() == null){
+            }
+            else {
+                if (field.getFK() == null) {
                 
                 
-                
-                }else{
+                }
+                else {
                 
                 }
             }
@@ -68,7 +74,7 @@ public class ToMongoDBTransformer implements DBTransformer {
         
     }
     
-    private void createAllDocuments(){
+    private void createAllDocuments() {
         for (TableDTO table : databaseDTO.getTables()) {
             createDocument(table);
         }

@@ -5,28 +5,36 @@ import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.ForeignKeyDTO;
 import dto.TableDTO;
+import org.postgresql.ds.PGConnectionPoolDataSource;
 import transformer.DBTransformer;
-import transformer.impl.ToPostgresDBTransformer;
+import transformer.impl.ToPostgreSQLDBTransformer;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class PostgreSQL extends Database {
+public class PostgreSQL
+      extends Database {
     
     private final DatabaseMetaData metaData;
-    private final Connection connection;
+    private final PGConnectionPoolDataSource connectionPool;
     
-    public PostgreSQL(Connection connection, List<String> names) throws SQLException {
-        super(names);
-        this.dbTransformer = new ToPostgresDBTransformer();
-        metaData = connection.getMetaData();
-        this.connection = connection;
+    public PostgreSQL(PGConnectionPoolDataSource connectionPool, List<String> names) throws SQLException {
+//        super(names);
+        this.dbTransformer = new ToPostgreSQLDBTransformer();
+        metaData = connectionPool.getConnection().getMetaData();
+        this.connectionPool = connectionPool;
     }
     
-    public Connection getConnection() {
-        return connection;
+    public PostgreSQL(PGConnectionPoolDataSource connectionPool) throws SQLException {
+        this.dbTransformer = new ToPostgreSQLDBTransformer();
+        metaData = connectionPool.getConnection().getMetaData();
+        this.connectionPool = connectionPool;
+    }
+    
+    public Connection getConnection() throws SQLException {
+        return connectionPool.getConnection();
     }
     
     @Override
@@ -36,7 +44,7 @@ public class PostgreSQL extends Database {
     
     @Override
     public DatabaseDTO makeDTO() throws SQLException {
-        return new DatabaseDTO(getAllTables());
+        return new DatabaseDTO(getAllTables(), connectionPool.getConnection().getMetaData().getURL());
     }
     
     protected Set<TableDTO> getAllTables() throws SQLException {

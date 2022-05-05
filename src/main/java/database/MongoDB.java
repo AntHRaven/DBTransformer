@@ -28,7 +28,7 @@ public class MongoDB extends Database {
     private static final String delimiter = "_";
     
     public MongoDB(MongoClient mongoClient, List<String> names) {
-        super(names);
+//        super(names);
         this.mongoClient = mongoClient;
         this.dbTransformer = new ToMongoDBTransformer();
     }

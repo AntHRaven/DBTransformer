@@ -1,15 +1,15 @@
 package dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ForeignKeyDTO {
     private String relTableName;
     private String relFieldName;
     
-    public ForeignKeyDTO(String relTableName, String relFieldName){
-        this.relTableName = relTableName;
-        this.relFieldName = relFieldName;
-    }
 }
 
