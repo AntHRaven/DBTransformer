@@ -175,6 +175,7 @@ public class ToPostgreSQLDBTransformer
         @Override
         public String call() throws SQLException, InterruptedException {
             ToPostgreSQLDBTransformer toPostgresDBTransformer = new ToPostgreSQLDBTransformer();
+            System.out.println(toPostgresDBTransformer.generateSQLCreateTable(tableDTO));
             connection.createStatement().executeQuery(toPostgresDBTransformer.generateSQLCreateTable(tableDTO));
             return null;
         }
