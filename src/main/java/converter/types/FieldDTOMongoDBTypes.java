@@ -1,7 +1,6 @@
 package converter.types;
 
 import org.bson.types.*;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
@@ -21,13 +20,13 @@ public enum FieldDTOMongoDBTypes implements FieldDTOTypes {
     DECIMAL_128(Decimal128.class),
     TIMESTAMP(LocalDateTime.class);
     
-    private Class typeClass;
+    private final Class<?> typeClass;
     
-    <T> FieldDTOMongoDBTypes(Class<T> typeClass) {
+    FieldDTOMongoDBTypes(Class<?> typeClass) {
         this.typeClass = typeClass;
     }
     
-    public Class getTypeClass() {
+    public Class<?> getTypeClass() {
         return typeClass;
     }
 }

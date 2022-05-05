@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -17,14 +16,11 @@ import dto.TableDTO;
 import org.bson.Document;
 import transformer.DBTransformer;
 
-import javax.print.Doc;
-
 public class ToMongoDBTransformer implements DBTransformer {
     
     private DatabaseDTO databaseDTO;
     private MongoClient mongoClientTo;
     private MongoClient mongoClientFrom;
-   
     
     @Override
     public void transform(Database from, Database to) throws SQLException {
@@ -35,6 +31,11 @@ public class ToMongoDBTransformer implements DBTransformer {
         mongoClientFrom = ((MongoDB) from).getMongoClient();
         
         createAllDocuments();
+    }
+    
+    @Override
+    public void fillAllData() {
+    
     }
     
     private void createDocument(TableDTO table){

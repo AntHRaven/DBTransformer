@@ -1,7 +1,6 @@
 package data;
 
 import dto.TableDTO;
-
 import java.util.Objects;
 
 public class TableData {

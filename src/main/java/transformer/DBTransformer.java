@@ -7,5 +7,6 @@ import database.Database;
 public interface DBTransformer {
 
     void transform(Database from, Database to) throws SQLException;
+    void fillAllData();
     
 }

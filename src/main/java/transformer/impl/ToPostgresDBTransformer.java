@@ -7,10 +7,10 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import data.TableData;
-import data.provider.Provider;
+import com.mongodb.MongoClient;
+import converter.ToPostgreSQLTypeConverter;
 import database.Database;
+import database.MongoDB;
 import database.PostgreSQL;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
@@ -20,25 +20,48 @@ import transformer.DBTransformer;
 public class ToPostgresDBTransformer implements DBTransformer {
     
     private DatabaseDTO databaseDTO;
-    private Connection connection;
+    private Connection connectionTo;
+    private Database from;
     
-    public void fillAllData(){
-        //can do more threads here (for current table)
-        databaseDTO.provider.databaseMetadata.forEach((tableData, fields) ->
-            {
-                try {
-                    fillTableData(tableData.getOldName(), tableData.getTableDTO().getName(), fields);
-                } catch (SQLException e) {
-                    //nothing?
-                }
-            }
-        );
+    @Override
+    public void transform(Database from, Database to) throws SQLException {
+        if (!(to instanceof PostgreSQL)) return;
+        
+        connectionTo = ((PostgreSQL) to).getConnection();
+        databaseDTO = from.makeDTO();
+        this.from = from;
+        createTables();
     }
     
-    public void fillTableData(String oldTableName, String newTableName, Map<String, FieldDTO> fields) throws SQLException {
-        Statement statement = connection.createStatement();
+    @Override
+    public void fillAllData(){
+        //can do more threads here (for current table)
+        databaseDTO.provider.databaseMetadata.forEach((tableData, fields) -> {
+            try {
+                if (databaseDTO.getMarker() == MongoDB.class) {
+                    MongoClient mongoClient = ((MongoDB) from).getMongoClient();
+                    ToPostgreSQLTypeConverter.convertAllFields(databaseDTO);
+                    fillCollectionsTable();
+                    for (String collectionName : from.getNames()) {
+                        // for each collection gwt data from documents
+                        // we need to keep data about collection name for current table !!!
+                        
+                        }
+                        fillTableData(tableData.getOldName(), tableData.getTableDTO().getName(), fields, mongoClient);
+                } else if (databaseDTO.getMarker() == PostgreSQL.class){
+                    fillTableData(tableData.getOldName(), tableData.getTableDTO().getName(), fields, ((PostgreSQL) from).getConnection());
+                }
+            } catch (SQLException e) {
+                //nothing?
+            }
+        });
+    }
+    
+    // from PostgreSQL method
+    private void fillTableData(String oldTableName, String newTableName, Map<String, FieldDTO> fields, Connection connectionFrom) throws SQLException {
+        Statement statementFrom = connectionFrom.createStatement();
         String selectQuery = "SELECT " + getListOfOldFieldsNames(fields) + " FROM " + oldTableName;
-        ResultSet table = statement.executeQuery(selectQuery);
+        ResultSet table = statementFrom.executeQuery(selectQuery);
         
         while (table.next()){
             ArrayList<String> values = new ArrayList<>();
@@ -47,8 +70,49 @@ public class ToPostgresDBTransformer implements DBTransformer {
             }
             String insertOneRowQuery =
                   "INSERT INTO " + newTableName + "(" + getListOfNewFieldsNames(fields) + ") VALUES (" + getListOfValues(values) + ")";
-            statement.executeQuery(insertOneRowQuery);
+            Statement statementTo = connectionTo.createStatement();
+            statementTo.executeQuery(insertOneRowQuery);
         }
+    }
+    
+    // from MongoDB method
+    private void fillTableData(String oldTableName, String newTableName, Map<String, FieldDTO> fields, MongoClient mongoClientFrom) throws SQLException {
+        // each doc has field "collection_name" -- wee need to fill it
+        String collectionFieldName = "collection_name";
+        
+        // if doc name contains two or more "_"
+        if (true){
+            // that means - this table is from SUB document
+            
+            // split by "_"
+            // second word = document _id
+            
+            // we have to check if each of fields are objects or not
+            
+            // get document from collection by name (old name ! )
+            
+            // then - foreach field dto in table
+            // - get from document by old field name the value
+            
+            // before getting the value we should check if field is FK o not
+            // if not - everything is ok, so we can get the value
+            // if FK - we need to add _id to relTable
+            // and add a row to that relTable with the same _id
+            
+            // do it recursively
+            
+        } else {
+            // that means - table is like "root" document
+            
+            // split by "_", first word = document, second = value of _id
+            // get all fields by old names and fill in tables with new names
+        }
+    }
+    
+    private void fillCollectionsTable(){
+        // положить имена все коллекций в таблицу с новым именем, по старому (указано ниже)
+        String collectionTableOldName = "collections";
+        from.getNames();
     }
     
     private String getListOfOldFieldsNames(Map<String, FieldDTO> fields){
@@ -75,14 +139,7 @@ public class ToPostgresDBTransformer implements DBTransformer {
         return list.substring(0, list.length() - 2);
     }
     
-    @Override
-    public void transform(Database from, Database to) throws SQLException {
-        if (!(to instanceof PostgreSQL)) return;
-    
-        connection = ((PostgreSQL) to).getConnection();
-        databaseDTO = from.makeDTO();
-        createTables();
-    }
+    // creating tables
     
     private void createTables() throws SQLException {
         StringBuilder createAllTablesSQL = new StringBuilder();
@@ -92,7 +149,7 @@ public class ToPostgresDBTransformer implements DBTransformer {
             createAllTablesSQL.append(generateSQLCreateTable(table));
             addAllForeignKeysSQL.append(generateSQLForeignKeys(table));
         }
-        Statement statement = connection.createStatement();
+        Statement statement = connectionTo.createStatement();
         statement.executeUpdate(createAllTablesSQL.toString());
         statement.executeUpdate(addAllForeignKeysSQL.toString());
         statement.close();

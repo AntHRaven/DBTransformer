@@ -63,13 +63,15 @@ public class MongoDB extends Database {
     
     public static String generateDocumentName(Document document){
         String name = documentDefName + delimiter;
-        if (document.get(documentIdFieldName) instanceof DBObject){
-            name += document.get(documentIdFieldName).toString();
+        name += format(document.get(documentIdFieldName).toString());
+        if (document.get(documentIdFieldName) instanceof DBObject) {
             name = parseJson(name);
-        }else {
-            name = delimiter + document.get(documentIdFieldName);
         }
         return name;
+    }
+    
+    private static String format( String s){
+        return s.replace("_", "");
     }
     
     private static String parseJson(String s){

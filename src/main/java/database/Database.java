@@ -1,13 +1,8 @@
 package database;
 
 import dto.DatabaseDTO;
-import dto.FieldDTO;
-import dto.ForeignKeyDTO;
-import dto.TableDTO;
 import transformer.DBTransformer;
-
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 
 public abstract class Database {
@@ -21,5 +16,9 @@ public abstract class Database {
     
     Database(List<String> names){
         this.names = names;
+    }
+    
+    public List<String> getNames() {
+        return names;
     }
 }

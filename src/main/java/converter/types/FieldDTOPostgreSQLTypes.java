@@ -26,7 +26,7 @@ public enum FieldDTOPostgreSQLTypes implements FieldDTOTypes{
     BOOLEAN("BOOLEAN"),
     NULL("NULL");
     
-    private String type;
+    private final String type;
     
     FieldDTOPostgreSQLTypes(String type){
         this.type = type;
