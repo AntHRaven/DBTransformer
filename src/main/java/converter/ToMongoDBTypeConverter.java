@@ -14,9 +14,10 @@ import java.util.Date;
 
 public class ToMongoDBTypeConverter {
     
-    public void convertAllFields(DatabaseDTO databaseDTO){
+    public static void convertAllFields(DatabaseDTO databaseDTO){
         for (TableDTO table : databaseDTO.getTables()) {
             for (FieldDTO field : table.getFields()) {
+                if (field.getType() instanceof FieldDTOMongoDBTypes) continue;
                 field.setType(convert((FieldDTOPostgreSQLTypes) field.getType()));
             }
         }
