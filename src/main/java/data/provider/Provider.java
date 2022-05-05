@@ -4,17 +4,20 @@ import data.TableData;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.TableDTO;
+import lombok.Data;
+
 import java.util.HashMap;
 import java.util.Map;
 
 // help us have access to data
 // (keep old names, which are linked to current table/field dto)
 // also have methods, that changing these names, deleting tables/fields
+@Data
 public class Provider {
     
     protected final DatabaseDTO databaseDTO;
     
-    public Map<TableData, Map<String, FieldDTO>> databaseMetadata;
+    private Map<TableData, Map<String, FieldDTO>> databaseMetadata;
     
     public Provider(DatabaseDTO databaseDTO){
         this.databaseDTO = databaseDTO;

@@ -36,7 +36,7 @@ public class ToPostgresDBTransformer implements DBTransformer {
     @Override
     public void fillAllData(){
         //can do more threads here (for current table)
-        databaseDTO.provider.databaseMetadata.forEach((tableData, fields) -> {
+        databaseDTO.provider.getDatabaseMetadata().forEach((tableData, fields) -> {
             try {
                 if (databaseDTO.getMarker() == MongoDB.class) {
                     MongoClient mongoClient = ((MongoDB) from).getMongoClient();
