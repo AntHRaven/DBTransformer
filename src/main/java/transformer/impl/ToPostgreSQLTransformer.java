@@ -122,7 +122,6 @@ public class ToPostgreSQLTransformer implements DBTransformer {
     // from MongoDB method
     private void fillTableData(String oldTableName, String newTableName, Map<String, FieldDTO> fields, MongoClient mongoClientFrom) throws SQLException {
         
-        String documentIdFieldName = "_id";
         String collectionName;
         String documentId;
         String delimiter = "_";
@@ -138,32 +137,27 @@ public class ToPostgreSQLTransformer implements DBTransformer {
             collectionName = parts[0];
             documentId = parts[2];
             values.add(collectionName);
-    
-            for (String oldFieldName : fields.keySet()) {
-                // add value of oldFieldName in document
-                // (find document in collection by _id)
-                    
-                MongoDatabase db = mongoClientFrom.getDatabase(databaseDTO.getName());
-                MongoCollection<Document> collection = db.getCollection(collectionName);
+            
+            MongoDatabase db = mongoClientFrom.getDatabase(databaseDTO.getName());
+            MongoCollection<Document> collection = db.getCollection(collectionName);
                 
-                Document doc = collection.find(eq("_id", new ObjectId(documentId))).first();
-                if (doc == null) {
-                    return;
-                } else {
-                    String name = MongoDB.generateDocumentName(doc, collectionName);
-                    for (String key : doc.keySet()) {
-                        Object field = doc.get(key);
-                        
-                        //if it's object
-                        if (field instanceof DBObject) {
-                            String subObjectName = name + delimiter + key;
-                            long id = getUniqueId(subObjectName);
-                            values.add(String.valueOf(id));
-                            fillSubObjectTableData((DBObject) field, subObjectName, id);
-                        //if not object
-                        } else {
-                            values.add((String) doc.get(key));
-                        }
+            Document doc = collection.find(eq("_id", new ObjectId(documentId))).first();
+            if (doc == null) {
+                return;
+            } else {
+                String name = MongoDB.generateDocumentName(doc, collectionName);
+                for (String key : doc.keySet()) {
+                    Object field = doc.get(key);
+                    
+                    //if it's object
+                    if (field instanceof DBObject) {
+                        String subObjectName = name + delimiter + key;
+                        long id = getUniqueId(subObjectName);
+                        values.add(String.valueOf(id));
+                        fillSubObjectTableData((DBObject) field, subObjectName, id);
+                    //if not object
+                    } else {
+                        values.add((String) doc.get(key));
                     }
                 }
             }
@@ -307,7 +301,7 @@ public class ToPostgreSQLTransformer implements DBTransformer {
         }
         
         @Override
-        public String call() throws SQLException, InterruptedException {
+        public String call() throws SQLException {
             ToPostgreSQLTransformer transformer = new ToPostgreSQLTransformer();
             connection.createStatement().executeQuery(transformer.generateSQLCreateTable(tableDTO));
             return null;
