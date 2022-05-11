@@ -7,7 +7,6 @@ import com.mongodb.client.MongoDatabase;
 import converter.ToPostgreSQLTypeConverter;
 import static com.mongodb.client.model.Filters.eq;
 import static transformer.FormatDataProvider.*;
-
 import data.TableData;
 import database.Database;
 import database.MongoDB;
@@ -36,6 +35,7 @@ public class ToPostgreSQLTransformer implements DBTransformer {
     private DatabaseDTO databaseDTO;
     private Connection connectionTo;
     private Database from;
+    private final Map<String, Long> u_id = new HashMap<>();
     
     @Override
     public void transform(Database from, Database to) throws SQLException {
@@ -176,7 +176,7 @@ public class ToPostgreSQLTransformer implements DBTransformer {
                 values.add(String.valueOf(id));
                 fillSubObjectTableData((DBObject) field, relTableName, id);
             //if not object
-            }else {
+            } else {
                 values.add((String) ob.get(key));
             }
         
@@ -188,9 +188,16 @@ public class ToPostgreSQLTransformer implements DBTransformer {
     }
     
     private long getUniqueId(String tableName){
-        // map - for each tableName we have long id, that is incrementing here
-        // TODO: 10.05.2022 how is better to do ?
-        return 0;
+        for (String name : u_id.keySet()) {
+            if (name.equals(tableName)){
+                long id = u_id.get(name);
+                u_id.put(name, ++id);
+                return id;
+            }
+        }
+        long id = 0;
+        u_id.put(tableName, id);
+        return id;
     }
     
     private void createTables(DatabaseDTO databaseDTO, Database to) throws SQLException, InterruptedException {
@@ -227,7 +234,6 @@ public class ToPostgreSQLTransformer implements DBTransformer {
         StringBuilder addForeignKeysSQL = new StringBuilder();
         for (FieldDTO fields : table.getFields()) {
             if (fields.getFK() != null) {
-                // TODO: 10.05.2022 fk_ ??? 
                 String fkName = "fk_" + table.getName() + "_" + fields.getFK().getRelTableName();
                 addForeignKeysSQL
                       .append("alter table ")
