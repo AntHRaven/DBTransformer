@@ -7,7 +7,6 @@ import com.mongodb.client.MongoDatabase;
 import converter.ToPostgreSQLTypeConverter;
 import static com.mongodb.client.model.Filters.eq;
 import static transformer.FormatDataProvider.*;
-
 import data.TableData;
 import database.Database;
 import database.MongoDB;
@@ -36,6 +35,7 @@ public class ToPostgreSQLTransformer implements DBTransformer {
     private DatabaseDTO databaseDTO;
     private Connection connectionTo;
     private Database from;
+    private final Map<String, Long> u_id = new HashMap<>();
     
     @Override
     public void transform(Database from, Database to) throws SQLException {
@@ -88,16 +88,40 @@ public class ToPostgreSQLTransformer implements DBTransformer {
         }
     }
     
-    private void fillCollectionsTable(){
-        // положить имена все коллекций в таблицу с новым именем, по старому (указано ниже)
+    private void fillCollectionsTable() throws SQLException {
+        List<String> names = from.getNames();
         String collectionTableOldName = "collections";
-        from.getNames();
+        String collectionTableNewName = null;
+        String collectionOldFieldName = "collection_name";
+        String collectionNewFieldName = null;
+    
+        for (TableData tableData : databaseDTO.getProvider().getDatabaseMetadata().keySet()) {
+            if (tableData.getOldName().equals(collectionTableOldName)){
+                collectionTableNewName = tableData.getTableDTO().getName();
+                for (String oldName : databaseDTO.getProvider().getDatabaseMetadata().get(tableData).keySet()) {
+                    if (oldName.equals(collectionOldFieldName)){
+                        collectionNewFieldName = databaseDTO.getProvider().getDatabaseMetadata().get(tableData).get(oldName).getName();
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+    
+        if (collectionNewFieldName != null & collectionTableNewName != null) {
+            Statement statementTo = connectionTo.createStatement();
+            for (String name : names) {
+                String insertQuery =
+                      "INSERT INTO " + collectionTableNewName + "(" + collectionNewFieldName + ") VALUES (" + name + ")";
+                statementTo.executeQuery(insertQuery);
+            }
+            
+        }
     }
     
     // from MongoDB method
     private void fillTableData(String oldTableName, String newTableName, Map<String, FieldDTO> fields, MongoClient mongoClientFrom) throws SQLException {
         
-        String documentIdFieldName = "_id";
         String collectionName;
         String documentId;
         String delimiter = "_";
@@ -113,32 +137,27 @@ public class ToPostgreSQLTransformer implements DBTransformer {
             collectionName = parts[0];
             documentId = parts[2];
             values.add(collectionName);
-    
-            for (String oldFieldName : fields.keySet()) {
-                // add value of oldFieldName in document
-                // (find document in collection by _id)
-                    
-                MongoDatabase db = mongoClientFrom.getDatabase(databaseDTO.getName());
-                MongoCollection<Document> collection = db.getCollection(collectionName);
+            
+            MongoDatabase db = mongoClientFrom.getDatabase(databaseDTO.getName());
+            MongoCollection<Document> collection = db.getCollection(collectionName);
                 
-                Document doc = collection.find(eq("_id", new ObjectId(documentId))).first();
-                if (doc == null) {
-                    return;
-                } else {
-                    String name = MongoDB.generateDocumentName(doc, collectionName);
-                    for (String key : doc.keySet()) {
-                        Object field = doc.get(key);
-                        
-                        //if it's object
-                        if (field instanceof DBObject) {
-                            String subObjectName = name + delimiter + key;
-                            long id = getUniqueId(subObjectName);
-                            values.add(String.valueOf(id));
-                            fillSubObjectTableData((DBObject) field, subObjectName, id);
-                        //if not object
-                        } else {
-                            values.add((String) doc.get(key));
-                        }
+            Document doc = collection.find(eq("_id", new ObjectId(documentId))).first();
+            if (doc == null) {
+                return;
+            } else {
+                String name = MongoDB.generateDocumentName(doc, collectionName);
+                for (String key : doc.keySet()) {
+                    Object field = doc.get(key);
+                    
+                    //if it's object
+                    if (field instanceof DBObject) {
+                        String subObjectName = name + delimiter + key;
+                        long id = getUniqueId(subObjectName);
+                        values.add(String.valueOf(id));
+                        fillSubObjectTableData((DBObject) field, subObjectName, id);
+                    //if not object
+                    } else {
+                        values.add((String) doc.get(key));
                     }
                 }
             }
@@ -176,7 +195,7 @@ public class ToPostgreSQLTransformer implements DBTransformer {
                 values.add(String.valueOf(id));
                 fillSubObjectTableData((DBObject) field, relTableName, id);
             //if not object
-            }else {
+            } else {
                 values.add((String) ob.get(key));
             }
         
@@ -188,9 +207,16 @@ public class ToPostgreSQLTransformer implements DBTransformer {
     }
     
     private long getUniqueId(String tableName){
-        // map - for each tableName we have long id, that is incrementing here
-        // TODO: 10.05.2022 how is better to do ?
-        return 0;
+        for (String name : u_id.keySet()) {
+            if (name.equals(tableName)){
+                long id = u_id.get(name);
+                u_id.put(name, ++id);
+                return id;
+            }
+        }
+        long id = 0;
+        u_id.put(tableName, id);
+        return id;
     }
     
     private void createTables(DatabaseDTO databaseDTO, Database to) throws SQLException, InterruptedException {
@@ -227,7 +253,6 @@ public class ToPostgreSQLTransformer implements DBTransformer {
         StringBuilder addForeignKeysSQL = new StringBuilder();
         for (FieldDTO fields : table.getFields()) {
             if (fields.getFK() != null) {
-                // TODO: 10.05.2022 fk_ ??? 
                 String fkName = "fk_" + table.getName() + "_" + fields.getFK().getRelTableName();
                 addForeignKeysSQL
                       .append("alter table ")
@@ -276,7 +301,7 @@ public class ToPostgreSQLTransformer implements DBTransformer {
         }
         
         @Override
-        public String call() throws SQLException, InterruptedException {
+        public String call() throws SQLException {
             ToPostgreSQLTransformer transformer = new ToPostgreSQLTransformer();
             connection.createStatement().executeQuery(transformer.generateSQLCreateTable(tableDTO));
             return null;
