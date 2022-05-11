@@ -1,15 +1,10 @@
 package converter.types;
 
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import org.bson.types.*;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 
-@NoArgsConstructor
-@AllArgsConstructor
 public enum FieldDTOMongoDBTypes implements FieldDTOTypes {
     
     ARRAY(ArrayList.class),
@@ -25,9 +20,13 @@ public enum FieldDTOMongoDBTypes implements FieldDTOTypes {
     DECIMAL_128(Decimal128.class),
     TIMESTAMP(LocalDateTime.class);
     
-    private Class typeClass;
+    private final Class<?> typeClass;
     
-    public Class getTypeClass() {
+    FieldDTOMongoDBTypes(Class<?> typeClass) {
+        this.typeClass = typeClass;
+    }
+    
+    public Class<?> getTypeClass() {
         return typeClass;
     }
 }

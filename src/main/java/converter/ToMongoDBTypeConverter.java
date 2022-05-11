@@ -1,4 +1,5 @@
 package converter;
+
 import converter.types.FieldDTOMongoDBTypes;
 import converter.types.FieldDTOPostgreSQLTypes;
 import dto.DatabaseDTO;
@@ -7,21 +8,21 @@ import dto.TableDTO;
 import org.bson.types.Binary;
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 
 public class ToMongoDBTypeConverter {
-
-//    public void convertAllFields(DatabaseDTO databaseDTO){
-//        for (TableDTO table : databaseDTO.getTables()) {
-//            for (FieldDTO field : table.getFields()) {
-//                field.setType(convert((FieldDTOPostgreSQLTypes) field.getType()));
-//            }
-//        }
-//
-//    }
+    
+    public static void convertAllFields(DatabaseDTO databaseDTO){
+        for (TableDTO table : databaseDTO.getTables()) {
+            for (FieldDTO field : table.getFields()) {
+                if (field.getType() instanceof FieldDTOMongoDBTypes) continue;
+                field.setType(convert((FieldDTOPostgreSQLTypes) field.getType()));
+            }
+        }
+        
+    }
     
     private static FieldDTOMongoDBTypes convert(FieldDTOPostgreSQLTypes type){
         switch (type){

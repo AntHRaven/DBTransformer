@@ -1,23 +1,24 @@
 package converter;
+
 import converter.types.FieldDTOMongoDBTypes;
 import converter.types.FieldDTOPostgreSQLTypes;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.TableDTO;
-
 import java.sql.Types;
 
 public class ToPostgreSQLTypeConverter {
-
-//    public void convertAllFields(DatabaseDTO databaseDTO){
-//        for (TableDTO table : databaseDTO.getTables()) {
-//            for (FieldDTO field : table.getFields()) {
-//                field.setType(convert((FieldDTOMongoDBTypes) field.getType()));
-//            }
-//        }
-//    }
     
-    private FieldDTOPostgreSQLTypes convert(FieldDTOMongoDBTypes type){
+    public static void convertAllFields(DatabaseDTO databaseDTO){
+        for (TableDTO table : databaseDTO.getTables()) {
+            for (FieldDTO field : table.getFields()) {
+                if (field.getType() instanceof FieldDTOPostgreSQLTypes) continue;
+                field.setType(convert((FieldDTOMongoDBTypes) field.getType()));
+            }
+        }
+    }
+    
+    private static FieldDTOPostgreSQLTypes convert(FieldDTOMongoDBTypes type){
         switch (type){
             case STRING, OBJECT_ID:{
                 return FieldDTOPostgreSQLTypes.TEXT;

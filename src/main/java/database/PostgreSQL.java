@@ -7,28 +7,23 @@ import dto.ForeignKeyDTO;
 import dto.TableDTO;
 import org.postgresql.ds.PGConnectionPoolDataSource;
 import transformer.DBTransformer;
-import transformer.impl.ToPostgreSQLDBTransformer;
+import transformer.impl.ToPostgreSQLTransformer;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class PostgreSQL
-      extends Database {
+public class PostgreSQL extends Database {
     
     private final DatabaseMetaData metaData;
     private final PGConnectionPoolDataSource connectionPool;
     
-    public PostgreSQL(PGConnectionPoolDataSource connectionPool, List<String> names) throws SQLException {
-//        super(names);
-        this.dbTransformer = new ToPostgreSQLDBTransformer();
-        metaData = connectionPool.getConnection().getMetaData();
-        this.connectionPool = connectionPool;
-    }
-    
-    public PostgreSQL(PGConnectionPoolDataSource connectionPool) throws SQLException {
-        this.dbTransformer = new ToPostgreSQLDBTransformer();
+    // TODO: 05.05.2022
+    // threads = for me (understand how all work)
+    public PostgreSQL(String dbName, PGConnectionPoolDataSource connectionPool, List<String> tablesNames) throws SQLException {
+        super(dbName, tablesNames);
+        this.dbTransformer = new ToPostgreSQLTransformer();
         metaData = connectionPool.getConnection().getMetaData();
         this.connectionPool = connectionPool;
     }
@@ -44,16 +39,18 @@ public class PostgreSQL
     
     @Override
     public DatabaseDTO makeDTO() throws SQLException {
-        return new DatabaseDTO(getAllTables(), connectionPool.getConnection().getMetaData().getURL());
+        DatabaseDTO databaseDTO = new DatabaseDTO(this.name, getAllTables(), this.getClass());
+        databaseDTO.initializeProvider();
+        return databaseDTO;
     }
     
-    protected Set<TableDTO> getAllTables() throws SQLException {
+    private Set<TableDTO> getAllTables() throws SQLException {
         Set<TableDTO> tables = new HashSet<>();
         for (String tableName : getAllTablesNames()) {
-//            if (names.contains(tableName)) {
+            if (names.contains(tableName)) {
                 TableDTO tableDTO = new TableDTO(tableName, getAllTableFields(tableName));
                 tables.add(tableDTO);
-//            }
+            }
         }
         return tables;
     }
@@ -93,6 +90,7 @@ public class PostgreSQL
         ArrayList<String> tablesNames = new ArrayList<>();
         ResultSet rs = metaData.getTables(null, null, "%", new String[]{"TABLE"});
         while (rs.next()) {
+            // TODO: 05.05.2022 check if 3 
             tablesNames.add(rs.getString(3));
         }
         return tablesNames;

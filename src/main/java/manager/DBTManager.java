@@ -1,22 +1,18 @@
 package manager;
 
 import database.Database;
-
 import java.sql.SQLException;
-
 import dto.DatabaseDTO;
 import merger.DBMerger;
 import merger.impl.DBMergerImpl;
 import transformer.DBTransformer;
-
-import java.util.ArrayList;
 import java.util.List;
 
 public class DBTManager {
     
     DBMerger merger = new DBMergerImpl();
     
-    public void merge(List<DatabaseDTO> databaseList, Database to) throws SQLException {
+    public void merge(List<DatabaseDTO> databaseList, Database to) throws SQLException, InterruptedException {
         merger.merge(merger.getMergedDto(databaseList), to);
     }
     
@@ -32,8 +28,5 @@ public class DBTManager {
     public void transform(DatabaseDTO from, Database to) throws SQLException {
         DBTransformer transformer = to.getTransformer();
         transformer.transform(from, to);
-        
     }
-    
-    
 }

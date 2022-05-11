@@ -1,11 +1,5 @@
 package converter.types;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@NoArgsConstructor
-@AllArgsConstructor
 public enum FieldDTOPostgreSQLTypes implements FieldDTOTypes{
     
     CHAR("CHAR"),
@@ -32,7 +26,11 @@ public enum FieldDTOPostgreSQLTypes implements FieldDTOTypes{
     BOOLEAN("BOOLEAN"),
     NULL("NULL");
     
-    private String type;
+    private final String type;
+    
+    FieldDTOPostgreSQLTypes(String type){
+        this.type = type;
+    }
     
     public String getType() {
         return type;
