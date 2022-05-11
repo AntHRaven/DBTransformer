@@ -6,15 +6,12 @@ import data.provider.Provider;
 import database.Database;
 import lombok.Getter;
 
+@Getter
 public class DatabaseDTO implements Cloneable{
   
-  @Getter
   private final Set<TableDTO> tables;
-  @Getter
   private Provider provider;
-  @Getter
   private final Class<? extends Database> marker;
-  @Getter
   private final String name;
  
   public DatabaseDTO(String name, Set<TableDTO> tables, Class<? extends Database> marker){

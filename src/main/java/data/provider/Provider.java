@@ -1,18 +1,11 @@
 package data.provider;
 
 import data.TableData;
-import database.Database;
-import database.MongoDB;
-import database.PostgreSQL;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.TableDTO;
 import lombok.Getter;
-
-import javax.swing.*;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 // help us have access to data
@@ -24,7 +17,7 @@ public class Provider {
     private final DatabaseDTO databaseDTO;
     
     @Getter
-    private Map<TableData, Map<String, FieldDTO>> databaseMetadata;
+    private Map<TableData, Map<String, FieldDTO>> databaseMetadata = new HashMap<>();
     
     public Provider(DatabaseDTO databaseDTO){
         this.databaseDTO = databaseDTO;
