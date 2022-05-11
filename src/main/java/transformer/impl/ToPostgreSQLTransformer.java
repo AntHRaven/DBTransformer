@@ -52,13 +52,18 @@ public class ToPostgreSQLTransformer implements DBTransformer {
     
     private void fillAllData(){
         //can do more threads here (for current table)
+        String collectionTableOldName = "collections";
         databaseDTO.getProvider().getDatabaseMetadata().forEach((tableData, fields) -> {
             try {
                 if (databaseDTO.getMarker() == MongoDB.class) {
                     MongoClient mongoClient = ((MongoDB) from).getMongoClient();
                     ToPostgreSQLTypeConverter.convertAllFields(databaseDTO);
                     fillCollectionsTable();
-                    fillTableData(tableData.getOldName(), tableData.getTableDTO().getName(), fields, mongoClient);
+                    long numOfDelimiters = tableData.getOldName().chars().filter(c -> c == '_').count();
+                    if (numOfDelimiters <= 2 & !tableData.getOldName().equals(collectionTableOldName) ) {
+                        // that means - tableDTO is document (not sub object)
+                        fillTableData(tableData.getOldName(), tableData.getTableDTO().getName(), fields, mongoClient);
+                    }
                 } else if (databaseDTO.getMarker() == PostgreSQL.class){
                     fillTableData(tableData.getOldName(), tableData.getTableDTO().getName(), fields, ((PostgreSQL) from).getConnection());
                 }
@@ -68,7 +73,7 @@ public class ToPostgreSQLTransformer implements DBTransformer {
         });
     }
     
-    // from PostgreSQL method
+    // from PostgreSQL
     private void fillTableData(String oldTableName, String newTableName, Map<String, FieldDTO> fields, Connection connectionFrom) throws SQLException {
         Statement statementFrom = connectionFrom.createStatement();
         String selectQuery = "SELECT " + getListOfOldFieldsNames(fields) + " FROM " + oldTableName;
@@ -117,7 +122,7 @@ public class ToPostgreSQLTransformer implements DBTransformer {
         }
     }
     
-    // from MongoDB method
+    // from MongoDB
     private void fillTableData(String oldTableName, String newTableName, Map<String, FieldDTO> fields, MongoClient mongoClientFrom) throws SQLException {
         
         String collectionName;
@@ -126,37 +131,32 @@ public class ToPostgreSQLTransformer implements DBTransformer {
         
         List<String> values = new ArrayList<>();
         
-        long numOfDelimiters = oldTableName.chars().filter(c -> c == '_').count();
-        if (numOfDelimiters <= 2){
-            // that means - tableDTO is document (not sub object)
+        String[] parts = oldTableName.split(delimiter);
             
-            String[] parts = oldTableName.split(delimiter);
+        collectionName = parts[0];
+        documentId = parts[2];
+        values.add(collectionName);
             
-            collectionName = parts[0];
-            documentId = parts[2];
-            values.add(collectionName);
-            
-            MongoDatabase db = mongoClientFrom.getDatabase(databaseDTO.getName());
-            MongoCollection<Document> collection = db.getCollection(collectionName);
+        MongoDatabase db = mongoClientFrom.getDatabase(databaseDTO.getName());
+        MongoCollection<Document> collection = db.getCollection(collectionName);
                 
-            Document doc = collection.find(eq("_id", new ObjectId(documentId))).first();
-            if (doc == null) {
-                return;
-            } else {
-                String name = MongoDB.generateDocumentName(doc, collectionName);
-                for (String key : doc.keySet()) {
-                    Object field = doc.get(key);
-                    
-                    //if it's object
-                    if (field instanceof DBObject) {
-                        String subObjectName = name + delimiter + key;
-                        long id = getUniqueId(subObjectName);
-                        values.add(String.valueOf(id));
-                        fillSubObjectTableData((DBObject) field, subObjectName, id);
+        Document doc = collection.find(eq("_id", new ObjectId(documentId))).first();
+        if (doc == null) {
+            return;
+        } else {
+            String name = MongoDB.generateDocumentName(doc, collectionName);
+            for (String key : doc.keySet()) {
+                Object field = doc.get(key);
+                
+                //if it's object
+                if (field instanceof DBObject) {
+                    String subObjectName = name + delimiter + key;
+                    long id = getUniqueId(subObjectName);
+                    values.add(String.valueOf(id));
+                    fillSubObjectTableData((DBObject) field, subObjectName, id);
                     //if not object
-                    } else {
-                        values.add((String) doc.get(key));
-                    }
+                } else {
+                    values.add((String) doc.get(key));
                 }
             }
             
