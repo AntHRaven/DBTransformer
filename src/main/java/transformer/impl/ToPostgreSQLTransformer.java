@@ -88,10 +88,35 @@ public class ToPostgreSQLTransformer implements DBTransformer {
         }
     }
     
-    private void fillCollectionsTable(){
-        // положить имена все коллекций в таблицу с новым именем, по старому (указано ниже)
+    private void fillCollectionsTable() throws SQLException {
+        List<String> names = from.getNames();
         String collectionTableOldName = "collections";
-        from.getNames();
+        String collectionTableNewName = null;
+        String collectionOldFieldName = "collection_name";
+        String collectionNewFieldName = null;
+    
+        for (TableData tableData : databaseDTO.getProvider().getDatabaseMetadata().keySet()) {
+            if (tableData.getOldName().equals(collectionTableOldName)){
+                collectionTableNewName = tableData.getTableDTO().getName();
+                for (String oldName : databaseDTO.getProvider().getDatabaseMetadata().get(tableData).keySet()) {
+                    if (oldName.equals(collectionOldFieldName)){
+                        collectionNewFieldName = databaseDTO.getProvider().getDatabaseMetadata().get(tableData).get(oldName).getName();
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+    
+        if (collectionNewFieldName != null & collectionTableNewName != null) {
+            Statement statementTo = connectionTo.createStatement();
+            for (String name : names) {
+                String insertQuery =
+                      "INSERT INTO " + collectionTableNewName + "(" + collectionNewFieldName + ") VALUES (" + name + ")";
+                statementTo.executeQuery(insertQuery);
+            }
+            
+        }
     }
     
     // from MongoDB method
