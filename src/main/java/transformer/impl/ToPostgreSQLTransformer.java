@@ -28,8 +28,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class ToPostgreSQLTransformer implements DBTransformer {
-    // TODO: 10.05.2022 split filling data of fields and values (take away all duplicates)
-    
     private static final ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
     
     private DatabaseDTO databaseDTO;
@@ -311,12 +309,12 @@ public class ToPostgreSQLTransformer implements DBTransformer {
     public static class GenerateSQLForeignKeysTask implements Callable<String> {
         TableDTO tableDTO;
         Connection connection;
-        
+    
         public GenerateSQLForeignKeysTask(TableDTO tableDTO, Connection connection) {
             this.tableDTO = tableDTO;
             this.connection = connection;
         }
-        
+    
         @Override
         public String call() throws SQLException {
             ToPostgreSQLTransformer transformer = new ToPostgreSQLTransformer();
@@ -324,7 +322,5 @@ public class ToPostgreSQLTransformer implements DBTransformer {
             return null;
         }
     }
-    
-    
 }
 

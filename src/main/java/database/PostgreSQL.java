@@ -90,7 +90,6 @@ public class PostgreSQL extends Database {
         ArrayList<String> tablesNames = new ArrayList<>();
         ResultSet rs = metaData.getTables(null, null, "%", new String[]{"TABLE"});
         while (rs.next()) {
-            // TODO: 05.05.2022 check if 3 
             tablesNames.add(rs.getString(3));
         }
         return tablesNames;
