@@ -7,7 +7,7 @@ import dto.ForeignKeyDTO;
 import dto.TableDTO;
 import org.postgresql.ds.PGConnectionPoolDataSource;
 import transformer.DBTransformer;
-import transformer.impl.ToPostgreSQLDBTransformer;
+import transformer.impl.ToPostgreSQLTransformer;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -19,20 +19,11 @@ public class PostgreSQL extends Database {
     private final DatabaseMetaData metaData;
     private final PGConnectionPoolDataSource connectionPool;
     
-    // TODO: 05.05.2022 think over 
+    // TODO: 05.05.2022
     // threads = for me (understand how all work)
-    public PostgreSQL(PGConnectionPoolDataSource connectionPool, List<String> names) throws SQLException {
-        super(names);
-        this.dbTransformer = new ToPostgreSQLDBTransformer();
-        metaData = connectionPool.getConnection().getMetaData();
-        this.connectionPool = connectionPool;
-    }
-    
-    // TODO: 05.05.2022 think over 
-    // without names ???
-    // why second constructor
-    public PostgreSQL(PGConnectionPoolDataSource connectionPool) throws SQLException {
-        this.dbTransformer = new ToPostgreSQLDBTransformer();
+    public PostgreSQL(String dbName, PGConnectionPoolDataSource connectionPool, List<String> tablesNames) throws SQLException {
+        super(dbName, tablesNames);
+        this.dbTransformer = new ToPostgreSQLTransformer();
         metaData = connectionPool.getConnection().getMetaData();
         this.connectionPool = connectionPool;
     }
@@ -48,16 +39,14 @@ public class PostgreSQL extends Database {
     
     @Override
     public DatabaseDTO makeDTO() throws SQLException {
-        //return new DatabaseDTO(getAllTables(), this.getClass());
-        // TODO: 05.05.2022 think over 
-        return new DatabaseDTO(getAllTables(), connectionPool.getConnection().getMetaData().getURL());
+        DatabaseDTO databaseDTO = new DatabaseDTO(this.name, getAllTables(), this.getClass());
+        databaseDTO.initializeProvider();
+        return databaseDTO;
     }
     
-    protected Set<TableDTO> getAllTables() throws SQLException {
+    private Set<TableDTO> getAllTables() throws SQLException {
         Set<TableDTO> tables = new HashSet<>();
         for (String tableName : getAllTablesNames()) {
-            // TODO: 05.05.2022 think over 
-            // Nikita had comments on if
             if (names.contains(tableName)) {
                 TableDTO tableDTO = new TableDTO(tableName, getAllTableFields(tableName));
                 tables.add(tableDTO);

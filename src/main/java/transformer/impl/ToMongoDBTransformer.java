@@ -1,6 +1,9 @@
 package transformer.impl;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,19 +11,28 @@ import java.util.Map;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import converter.ToMongoDBTypeConverter;
+import converter.types.FieldDTOMongoDBTypes;
+import data.TableData;
 import database.Database;
 import database.MongoDB;
+import database.PostgreSQL;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.TableDTO;
 import org.bson.Document;
 import transformer.DBTransformer;
 
+import javax.print.Doc;
+
+import static transformer.FormatDataProvider.getListOfOldFieldsNames;
+
 public class ToMongoDBTransformer implements DBTransformer {
     
     private DatabaseDTO databaseDTO;
     private MongoClient mongoClientTo;
-    private MongoClient mongoClientFrom;
+    private Database from;
+    private Database to;
     
     @Override
     public void transform(Database from, Database to) throws SQLException {
@@ -28,34 +40,32 @@ public class ToMongoDBTransformer implements DBTransformer {
         
         databaseDTO = from.makeDTO();
     
-        // TODO: 05.05.2022 no mongo for both
-        // do as in ToPostgreSQLTransformer
         mongoClientTo = ((MongoDB) to).getMongoClient();
-        mongoClientFrom = ((MongoDB) from).getMongoClient();
+        this.from = from;
+        this.to = to;
         
-        createAllDocuments();
+        createAllDocumentsAndFillData();
     }
     
-    @Override
-    public void fillAllData() {
+    // from PostgreSQL
+    private void createDocument(TableData tableData, TableDTO tableDTO, Map<String, FieldDTO> fields, Connection connectionFrom) throws SQLException {
     
-    }
-    
-    private void createDocument(TableDTO table){
-        String DBName = mongoClientTo.listDatabaseNames().first();
-        MongoDatabase db = mongoClientTo.getDatabase(DBName);
+        Document document = new Document();
+        Map<String, Object> values = new HashMap<>();
         
-        db.createCollection(table.getName());
-        MongoCollection<Document> collection = db.getCollection(table.getName());
+        MongoDatabase db = mongoClientTo.getDatabase(to.getName());
         
-        List<Document> documents = new ArrayList<>();
+        db.createCollection(tableDTO.getName());
+        MongoCollection<Document> collection = db.getCollection(tableDTO.getName());
         
-        for (FieldDTO field : table.getFields()) {
+        List<FieldDTO> PK = getPK(tableDTO);
+        
+        for (FieldDTO field : tableDTO.getFields()) {
             if (field.isPK()) {
                 if (field.getFK() == null) {
-                    Map<String, Object> fields = new HashMap<>();
-                    documents.add(new Document());
+                    values.put(field.getName(), getValue(field, PK, connectionFrom));
                 } else {
+                
                 
                 }
             } else {
@@ -67,15 +77,47 @@ public class ToMongoDBTransformer implements DBTransformer {
                 }
             }
         }
-        collection.insertMany(documents);
-        
+        document.putAll(values);
+        collection.insertOne(document);
     }
     
-    private void createAllDocuments() {
-        for (TableDTO table : databaseDTO.getTables()) {
-            createDocument(table);
+    // from MongoDB
+    private void createDocument(TableData tableData, TableDTO tableDTO, Map<String, FieldDTO> fields, MongoClient mongoClient){
+    
+    }
+    
+    private List<FieldDTO> getPK(TableDTO tableDTO){
+        List<FieldDTO> PK = new ArrayList<>();
+        for (FieldDTO fieldDTO : tableDTO.getFields()) {
+            if (fieldDTO.isPK()){
+                PK.add(fieldDTO);
+            }
         }
- 
+        return PK;
+    }
+    
+    private Object getValue (FieldDTO field, List<FieldDTO> PK, Connection connectionFrom) throws SQLException {
+        Class<?> marker = ((FieldDTOMongoDBTypes) field.getType()).getTypeClass();
+        
+        Statement statementFrom = connectionFrom.createStatement();
+        String selectQuery = "SELECT " + getListOfOldFieldsNames(fields) + " FROM " + oldTableName;
+        ResultSet table = statementFrom.executeQuery(selectQuery);
+    }
+    
+    private void createAllDocumentsAndFillData() {
+        databaseDTO.getProvider().getDatabaseMetadata().forEach((tableData, fields) -> {
+            try {
+                if (databaseDTO.getMarker() == MongoDB.class) {
+                    MongoClient mongoClient = ((MongoDB) from).getMongoClient();
+                    createDocument(tableData, tableData.getTableDTO(), fields, mongoClient);
+                } else if (databaseDTO.getMarker() == PostgreSQL.class){
+                    ToMongoDBTypeConverter.convertAllFields(databaseDTO);
+                    createDocument(tableData, tableData.getTableDTO(), fields, ((PostgreSQL) from).getConnection());
+                }
+            } catch (SQLException e) {
+                //something
+            }
+        });
     }
     
 }

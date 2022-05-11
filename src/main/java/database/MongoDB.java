@@ -9,6 +9,7 @@ import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.ForeignKeyDTO;
 import dto.TableDTO;
+import lombok.Getter;
 import org.bson.Document;
 import transformer.DBTransformer;
 import transformer.impl.ToMongoDBTransformer;
@@ -16,8 +17,9 @@ import java.util.*;
 
 public class MongoDB extends Database {
     
+    @Getter
     private final MongoClient mongoClient;
-    private  final Set<TableDTO> tables = new HashSet<>();
+    private final Set<TableDTO> tables = new HashSet<>();
     
     private static final String collectionTableName = "collections";
     private static final String collectionFieldName = "collection_name";
@@ -25,14 +27,10 @@ public class MongoDB extends Database {
     private static final String documentDefName = "document";
     private static final String delimiter = "_";
     
-    public MongoDB(MongoClient mongoClient, List<String> names) {
-//        super(names);
+    public MongoDB(String dbName, MongoClient mongoClient, List<String> documentsNames) {
+        super(dbName, documentsNames);
         this.mongoClient = mongoClient;
         this.dbTransformer = new ToMongoDBTransformer();
-    }
-    
-    public MongoClient getMongoClient() {
-        return mongoClient;
     }
     
     @Override
@@ -43,14 +41,16 @@ public class MongoDB extends Database {
     @Override
     public DatabaseDTO makeDTO() {
         makeAllTables();
-        return new DatabaseDTO(tables, this.getClass());
+        DatabaseDTO databaseDTO = new DatabaseDTO(this.name, tables, this.getClass());
+        databaseDTO.initializeProvider();
+        return databaseDTO;
     }
     
     private void makeAllTables(){
         makeTableCollections();
         for (MongoCollection<Document> collection : getAllCollections()) {
             for (Document doc : collection.find()) {
-                makeTableFromDocument(doc);
+                makeTableFromDocument(doc, collection);
             }
         }
     }
@@ -61,8 +61,8 @@ public class MongoDB extends Database {
         tables.add(new TableDTO(collectionTableName, fields));
     }
     
-    public static String generateDocumentName(Document document){
-        String name = documentDefName + delimiter;
+    public static String generateDocumentName(Document document, String collectionName){
+        String name = collectionName + delimiter + documentDefName + delimiter;
         name += format(document.get(documentIdFieldName).toString());
         if (document.get(documentIdFieldName) instanceof DBObject) {
             name = parseJson(name);
@@ -108,9 +108,9 @@ public class MongoDB extends Database {
         tables.add(new TableDTO(tableName, fields));
     }
     
-    private void makeTableFromDocument(Document document){
+    private void makeTableFromDocument(Document document, MongoCollection<Document> collection){
         
-        String name = generateDocumentName(document);
+        String name = generateDocumentName(document, collection.getNamespace().getCollectionName());
         ArrayList<FieldDTO> fields = new ArrayList<>();
         
         fields.add(
@@ -136,24 +136,15 @@ public class MongoDB extends Database {
         tables.add(new TableDTO(name, fields));
     }
     
-    private List<MongoDatabase> getAllDB(){
-        List<MongoDatabase> databases = new ArrayList<>();
-        for (String dbName : mongoClient.listDatabaseNames()) {
-            MongoDatabase db = mongoClient.getDatabase(dbName);
-            databases.add(db);
-        }
-        return databases;
-    }
-    
     private Set<MongoCollection<Document>> getAllCollections(){
         Set<MongoCollection<Document>> collections = new HashSet<>();
-        for (MongoDatabase db : getAllDB()) {
-            for (String collectionName :  db.listCollectionNames()) {
-                if (names.contains(collectionName)) {
-                    collections.add(db.getCollection(collectionName));
-                }
+        MongoDatabase db = mongoClient.getDatabase(this.name);
+        for (String collectionName :  db.listCollectionNames()) {
+            if (names.contains(collectionName)) {
+                collections.add(db.getCollection(collectionName));
             }
         }
+        
         return collections;
     }
     

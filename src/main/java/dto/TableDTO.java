@@ -2,16 +2,15 @@ package dto;
 
 import java.util.ArrayList;
 import java.util.Objects;
-
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
-@NoArgsConstructor
 @AllArgsConstructor
+@Getter
 public class TableDTO {
     
+    @Setter
     private String name;
     private ArrayList<FieldDTO> fields;
     

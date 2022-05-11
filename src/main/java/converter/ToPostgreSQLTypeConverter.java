@@ -1,10 +1,10 @@
 package converter;
+
 import converter.types.FieldDTOMongoDBTypes;
 import converter.types.FieldDTOPostgreSQLTypes;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.TableDTO;
-
 import java.sql.Types;
 
 public class ToPostgreSQLTypeConverter {

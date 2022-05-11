@@ -1,4 +1,5 @@
 package converter;
+
 import converter.types.FieldDTOMongoDBTypes;
 import converter.types.FieldDTOPostgreSQLTypes;
 import dto.DatabaseDTO;
@@ -7,7 +8,6 @@ import dto.TableDTO;
 import org.bson.types.Binary;
 import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;

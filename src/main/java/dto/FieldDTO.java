@@ -2,17 +2,15 @@ package dto;
 
 import converter.types.FieldDTOTypes;
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
-@NoArgsConstructor
 @AllArgsConstructor
+@Getter
 public class FieldDTO {
-    
+    @Setter
     private String name;
     private FieldDTOTypes type;
     private boolean isPK;
     private ForeignKeyDTO FK;
-    
 }

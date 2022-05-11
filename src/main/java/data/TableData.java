@@ -1,23 +1,19 @@
 package data;
 
 import dto.TableDTO;
+import lombok.Getter;
 import java.util.Objects;
 
 public class TableData {
+    
+    @Getter
     String oldName;
+    @Getter
     TableDTO tableDTO;
     
     public TableData(String oldName, TableDTO tableDTO){
         this.oldName = oldName;
         this.tableDTO = tableDTO;
-    }
-    
-    public String getOldName() {
-        return oldName;
-    }
-    
-    public TableDTO getTableDTO() {
-        return tableDTO;
     }
     
     @Override

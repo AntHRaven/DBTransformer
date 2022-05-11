@@ -1,22 +1,29 @@
 package data.provider;
 
 import data.TableData;
+import database.Database;
+import database.MongoDB;
+import database.PostgreSQL;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.TableDTO;
-import lombok.Data;
+import lombok.Getter;
 
+import javax.swing.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 // help us have access to data
 // (keep old names, which are linked to current table/field dto)
 // also have methods, that changing these names, deleting tables/fields
-@Data
 public class Provider {
     
-    protected final DatabaseDTO databaseDTO;
+    @Getter
+    private final DatabaseDTO databaseDTO;
     
+    @Getter
     private Map<TableData, Map<String, FieldDTO>> databaseMetadata;
     
     public Provider(DatabaseDTO databaseDTO){
