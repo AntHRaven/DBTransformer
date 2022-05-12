@@ -1,5 +1,6 @@
 package transformer.impl;
 
+import com.ibatis.common.jdbc.ScriptRunner;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
@@ -17,6 +18,11 @@ import dto.TableDTO;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import transformer.DBTransformer;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -67,17 +73,20 @@ public class ToPostgreSQLTransformer implements DBTransformer {
                 } else if (databaseDTO.getMarker() == PostgreSQL.class){
                     fillTableData(tableData.getOldName(), tableData.getTableDTO().getName(), fields, ((PostgreSQL) from).getConnection());
                 }
-            } catch (SQLException e) {
+            } catch (SQLException | IOException e) {
                 //something
             }
         });
     }
     
     // from PostgreSQL
-    private void fillTableData(String oldTableName, String newTableName, Map<String, FieldDTO> fields, Connection connectionFrom) throws SQLException {
+    private void fillTableData(String oldTableName, String newTableName, Map<String, FieldDTO> fields, Connection connectionFrom) throws SQLException,
+                                                                                                                                         IOException {
         Statement statementFrom = connectionFrom.createStatement();
         String selectQuery = "SELECT " + getListOfOldFieldsNames(fields) + " FROM " + oldTableName;
         ResultSet table = statementFrom.executeQuery(selectQuery);
+    
+        clearFile("src/main/temp.sql");
         
         while (table.next()){
             ArrayList<String> values = new ArrayList<>();
@@ -88,7 +97,26 @@ public class ToPostgreSQLTransformer implements DBTransformer {
                   "INSERT INTO " + newTableName + "(" + getListOfNewFieldsNames(fields) + ") VALUES (" + getListOfValues(values) + ")";
             Statement statementTo = connectionTo.createStatement();
             statementTo.executeQuery(insertOneRowQuery);
+            fillSqlFile(insertOneRowQuery);
         }
+        
+        executeSqlFile();
+    }
+    
+    private void clearFile(String path) throws FileNotFoundException {
+        PrintWriter writer = new PrintWriter(path);
+        writer.print("");
+        writer.close();
+    }
+    
+    public void fillSqlFile(String query) throws IOException {
+        Files.write(Paths.get("src/main/temp.sql"), query.getBytes(), StandardOpenOption.APPEND);
+    }
+    
+    private void executeSqlFile() throws IOException, SQLException {
+        ScriptRunner sr = new ScriptRunner(connectionTo, false, true);
+        Reader reader = new BufferedReader(new FileReader("src/main/temp.sql"));
+        sr.runScript(reader);
     }
     
     private void fillCollectionsTable() throws SQLException {
@@ -123,7 +151,8 @@ public class ToPostgreSQLTransformer implements DBTransformer {
     }
     
     // from MongoDB
-    private void fillTableData(String oldTableName, String newTableName, Map<String, FieldDTO> fields, MongoClient mongoClientFrom) throws SQLException {
+    private void fillTableData(String oldTableName, String newTableName, Map<String, FieldDTO> fields, MongoClient mongoClientFrom) throws SQLException,
+                                                                                                                                           IOException {
         
         String collectionName;
         String documentId;
@@ -132,14 +161,14 @@ public class ToPostgreSQLTransformer implements DBTransformer {
         List<String> values = new ArrayList<>();
         
         String[] parts = oldTableName.split(delimiter);
-            
+        
         collectionName = parts[0];
         documentId = parts[2];
         values.add(collectionName);
-            
+        
         MongoDatabase db = mongoClientFrom.getDatabase(databaseDTO.getName());
         MongoCollection<Document> collection = db.getCollection(collectionName);
-                
+        
         Document doc = collection.find(eq("_id", new ObjectId(documentId))).first();
         if (doc == null) {
             return;
@@ -161,7 +190,7 @@ public class ToPostgreSQLTransformer implements DBTransformer {
             }
             
             String insertOneRowQuery =
-                  "INSERT INTO " + newTableName + "(" + getListOfNewFieldsNames(fields) + ") VALUES (" + getListOfValues(values) + ")";
+                  "INSERT INTO " + newTableName + "(" + getListOfNewFieldsNames(fields) + ") VALUES (" + getListOfValues(values) + ");\n";
             Statement statementTo = connectionTo.createStatement();
             statementTo.executeQuery(insertOneRowQuery);
         }
