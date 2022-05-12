@@ -15,17 +15,13 @@ import transformer.DBTransformer;
 import transformer.impl.ToMongoDBTransformer;
 import java.util.*;
 
+import static data.provider.MongoDBStringConstantsProvider.*;
+
 public class MongoDB extends Database {
     
     @Getter
     private final MongoClient mongoClient;
     private final Set<TableDTO> tables = new HashSet<>();
-    
-    private static final String collectionTableName = "collections";
-    private static final String collectionFieldName = "collection_name";
-    private static final String documentIdFieldName = "_id";
-    private static final String documentDefName = "document";
-    private static final String delimiter = "_";
     
     public MongoDB(String dbName, MongoClient mongoClient, List<String> documentsNames) {
         super(dbName, documentsNames);

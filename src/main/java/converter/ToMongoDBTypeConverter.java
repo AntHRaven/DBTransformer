@@ -21,7 +21,6 @@ public class ToMongoDBTypeConverter {
                 field.setType(convert((FieldDTOPostgreSQLTypes) field.getType()));
             }
         }
-        
     }
     
     private static FieldDTOMongoDBTypes convert(FieldDTOPostgreSQLTypes type){

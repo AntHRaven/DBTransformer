@@ -17,7 +17,7 @@ public class Provider {
     private final DatabaseDTO databaseDTO;
     
     @Getter
-    private Map<TableData, Map<String, FieldDTO>> databaseMetadata = new HashMap<>();
+    private final Map<TableData, Map<String, FieldDTO>> databaseMetadata = new HashMap<>();
     
     public Provider(DatabaseDTO databaseDTO){
         this.databaseDTO = databaseDTO;
