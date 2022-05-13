@@ -8,7 +8,6 @@ import converter.ToPostgreSQLTypeConverter;
 import static com.mongodb.client.model.Filters.eq;
 import static data.provider.FormatDataProvider.*;
 import static data.provider.MongoDBStringConstantsProvider.*;
-
 import converter.types.FieldDTOPostgreSQLTypes;
 import data.TableData;
 import database.Database;
@@ -81,10 +80,8 @@ public class ToPostgreSQLTransformer implements DBTransformer {
     // from MongoDB
     private void fillTableData(String oldTableName, String newTableName, Map<String, FieldDTO> fields, MongoClient mongoClientFrom) throws SQLException,
                                                                                                                                            IOException {
-        
         String collectionName;
         String documentId;
-        
         List<String> values = new ArrayList<>();
         
         String[] parts = oldTableName.split(delimiter);
@@ -98,7 +95,7 @@ public class ToPostgreSQLTransformer implements DBTransformer {
         
         Document doc = collection.find(eq("_id", new ObjectId(documentId))).first();
         if (doc != null) {
-            String name = MongoDB.generateDocumentName(doc, collectionName);
+            String name = generateDocumentName(doc, collectionName);
             for (String key : doc.keySet()) {
                 clearFile("src/main/temp.sql");
                 Object field = doc.get(key);

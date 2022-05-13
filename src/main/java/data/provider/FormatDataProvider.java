@@ -1,7 +1,6 @@
 package data.provider;
 
 import dto.FieldDTO;
-
 import java.util.List;
 import java.util.Map;
 

@@ -45,9 +45,36 @@ public class MongoDB extends Database {
     private void makeAllTables(){
         makeTableCollections();
         for (MongoCollection<Document> collection : getAllCollections()) {
-            for (Document doc : collection.find()) {
-                makeTableFromDocument(doc, collection);
+            if (!isIdenticalDocumentFields(collection)) {
+                for (Document doc : collection.find()) {
+                    makeTableFromDocument(doc, collection);
+                }
+            } else {
+                makeTableFromCollection(collection);
             }
+        }
+    }
+    
+    private boolean isIdenticalDocumentFields(MongoCollection<Document> collection){
+        List<String> keys = new ArrayList<>(Objects.requireNonNull(collection.find().first()).keySet());
+        for (Document doc : collection.find()) {
+            List<String> docFields = new ArrayList<>(doc.keySet());
+            for (int i = 0; i < keys.size(); i++){
+                if (!keys.get(i).equals(docFields.get(i))){
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    
+    private void makeTableFromCollection(MongoCollection<Document> collection){
+        String name = collection.getNamespace().getCollectionName();
+        ArrayList<FieldDTO> fields = new ArrayList<>();
+        Document doc = collection.find().first();
+    
+        if (doc != null) {
+            makeTable(doc, name, fields);
         }
     }
     
@@ -57,51 +84,29 @@ public class MongoDB extends Database {
         tables.add(new TableDTO(collectionTableName, fields));
     }
     
-    public static String generateDocumentName(Document document, String collectionName){
-        String name = collectionName + delimiter + documentDefName + delimiter;
-        name += format(document.get(documentIdFieldName).toString());
-        if (document.get(documentIdFieldName) instanceof DBObject) {
-            name = parseJson(name);
-        }
-        return name;
-    }
-    
-    private static String format( String s){
-        return s.replace("_", "");
-    }
-    
-    private static String parseJson(String s){
-        return s.replace("{", "")
-              .replace("}", "")
-              .replace(":", "")
-              .replaceAll("\"", "")
-              .replaceAll("( )+", delimiter);
-    }
-    
-    private void makeTableFromSubObject(DBObject subObject, String tableName){
-    
-        ArrayList<FieldDTO> fields = new ArrayList<>();
-        fields.add(new FieldDTO(documentIdFieldName, FieldDTOMongoDBTypes.OBJECT_ID, true, null));
+    private void addFieldDTO(ArrayList<FieldDTO> fields, String key, String relTableName, Object field, boolean isPK){
+        // if object
+        if (field instanceof DBObject) {
+            fields.add(
+                  new FieldDTO(key + documentIdFieldName, FieldDTOMongoDBTypes.OBJECT_ID, isPK,
+                               new ForeignKeyDTO(relTableName, documentIdFieldName)));
+            makeTableFromSubObject((DBObject) field, relTableName);
         
-        for (String key : subObject.keySet()) {
-            String relTableName = tableName + key;
-            Object field = subObject.get(key);
+        // if not object
+        }else {
+            fields.add(new FieldDTO(key, ToMongoDBTypeConverter.getTypeWithClass(field.getClass()), isPK, null));
+        }
+    }
+    
+    private void makeTable(Document document, String name, ArrayList<FieldDTO> fields){
+        for (String key : document.keySet()) {
+            Object field = document.get(key);
+            boolean isPK = key.equals(documentIdFieldName);
+            String subObjectName = name + delimiter + key;
             
-            //if it's object
-            if (field instanceof DBObject) {
-                fields.add(
-                      new FieldDTO(key + documentIdFieldName, FieldDTOMongoDBTypes.STRING, true,
-                                   new ForeignKeyDTO(relTableName, documentIdFieldName)));
-    
-                makeTableFromSubObject((DBObject) field, relTableName);
-                
-            //if not object
-            }else {
-                fields.add(new FieldDTO(key, ToMongoDBTypeConverter.getTypeWithClass(field.getClass()), false, null));
-            }
+            addFieldDTO(fields, key, subObjectName, field, isPK);
         }
-        
-        tables.add(new TableDTO(tableName, fields));
+        tables.add(new TableDTO(name, fields));
     }
     
     private void makeTableFromDocument(Document document, MongoCollection<Document> collection){
@@ -112,24 +117,22 @@ public class MongoDB extends Database {
         fields.add(
               new FieldDTO(collectionFieldName, FieldDTOMongoDBTypes.STRING, false,
               new ForeignKeyDTO(collectionTableName, collectionFieldName)));
+    
+        makeTable(document, name, fields);
+    }
+    
+    private void makeTableFromSubObject(DBObject subObject, String tableName){
         
-        for (String key : document.keySet()) {
-            Object field = document.get(key);
-            boolean isPK = key.equals(documentIdFieldName);
-            
-            //if it's object
-            if (field instanceof DBObject) {
-                String subObjectName = name + delimiter + key;
-                fields.add(
-                      new FieldDTO(key + documentIdFieldName, FieldDTOMongoDBTypes.OBJECT_ID, isPK,
-                                   new ForeignKeyDTO(subObjectName, documentIdFieldName)));
-                makeTableFromSubObject((DBObject) field, subObjectName);
-            //if not object
-            } else {
-               fields.add(new FieldDTO(key, ToMongoDBTypeConverter.getTypeWithClass(field.getClass()), isPK, null));
-            }
+        ArrayList<FieldDTO> fields = new ArrayList<>();
+        fields.add(new FieldDTO(documentIdFieldName, FieldDTOMongoDBTypes.OBJECT_ID, true, null));
+        
+        for (String key : subObject.keySet()) {
+            String relTableName = tableName + key;
+            Object field = subObject.get(key);
+            addFieldDTO(fields, key, relTableName, field, false);
         }
-        tables.add(new TableDTO(name, fields));
+        
+        tables.add(new TableDTO(tableName, fields));
     }
     
     private Set<MongoCollection<Document>> getAllCollections(){
@@ -140,7 +143,6 @@ public class MongoDB extends Database {
                 collections.add(db.getCollection(collectionName));
             }
         }
-        
         return collections;
     }
     
