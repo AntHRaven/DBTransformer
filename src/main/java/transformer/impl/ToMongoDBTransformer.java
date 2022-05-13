@@ -11,6 +11,10 @@ import java.util.Map;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -21,19 +25,27 @@ import database.MongoDB;
 import database.PostgreSQL;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
+import dto.TableDTO;
+
+import java.util.concurrent.ThreadPoolExecutor;
+
 import org.bson.Document;
 import transformer.DBTransformer;
+
 import static data.provider.FormatDataProvider.*;
 
 public class ToMongoDBTransformer implements DBTransformer {
     
+    private static final ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
     private DatabaseDTO databaseDTO;
     private Database from;
     private Database to;
     
     @Override
-    public void transform(Database from, Database to) throws SQLException {
-        if (!(to instanceof MongoDB) || (from instanceof MongoDB)) {return;}
+    public void transform(Database from, Database to) throws SQLException, InterruptedException {
+        if (!(to instanceof MongoDB) || (from instanceof MongoDB)) {
+            return;
+        }
         
         databaseDTO = from.makeDTO();
         this.from = from;
@@ -98,17 +110,45 @@ public class ToMongoDBTransformer implements DBTransformer {
             return values;
     }
     
-    private void createAllDocumentsAndFillData() {
+    private void createAllDocumentsAndFillData() throws InterruptedException {
+        LinkedBlockingQueue<Callable<String>> callablesCreateDocumentsTasks = new LinkedBlockingQueue<>();
+        
         databaseDTO.getProvider().getDatabaseMetadata().forEach((tableData, fields) -> {
             try {
-                if (databaseDTO.getMarker() == PostgreSQL.class){
+                if (databaseDTO.getMarker() == PostgreSQL.class) {
                     ToMongoDBTypeConverter.convertAllFields(databaseDTO);
-                    createCollection(tableData, fields, ((PostgreSQL) from).getConnection());
+                    callablesCreateDocumentsTasks.add(new ToMongoDBTransformer.CreateAllDocumentsAndFillDataTask(tableData, fields,
+                                                                                                                 ((PostgreSQL) from).getConnection()));
                 }
-            } catch (SQLException e) {
+            }
+            catch (SQLException e) {
                 //something
             }
         });
+        executor.invokeAll(callablesCreateDocumentsTasks);
+        callablesCreateDocumentsTasks.clear();
+    }
+    
+    public static class CreateAllDocumentsAndFillDataTask
+          implements Callable<String> {
+        
+        TableData tableData;
+        Map<String, FieldDTO> fields;
+        Connection connectionFrom;
+        
+        public CreateAllDocumentsAndFillDataTask(TableData tableData, Map<String, FieldDTO> fields, Connection connectionFrom) {
+            this.tableData = tableData;
+            this.fields = fields;
+            this.connectionFrom = connectionFrom;
+        }
+        
+        @Override
+        public String call() throws SQLException {
+            ToMongoDBTransformer transformer = new ToMongoDBTransformer();
+            transformer.createCollection(tableData, fields, connectionFrom);
+//            connection.createStatement().executeQuery(transformer.generateSQLForeignKeys(tableDTO));
+            return null;
+        }
     }
     
 }
