@@ -12,7 +12,9 @@ public class ToPostgreSQLTypeConverter {
     public static void convertAllFields(DatabaseDTO databaseDTO){
         for (TableDTO table : databaseDTO.getTables()) {
             for (FieldDTO field : table.getFields()) {
-                if (field.getType() instanceof FieldDTOPostgreSQLTypes) continue;
+                if (field.getType() instanceof FieldDTOPostgreSQLTypes) {
+                    continue;
+                }
                 field.setType(convert((FieldDTOMongoDBTypes) field.getType()));
             }
         }
