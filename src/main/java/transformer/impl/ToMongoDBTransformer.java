@@ -4,47 +4,33 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.*;
 
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import converter.ToMongoDBTypeConverter;
-import converter.types.FieldDTOMongoDBTypes;
 import data.TableData;
 import database.Database;
 import database.MongoDB;
 import database.PostgreSQL;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
-import dto.TableDTO;
-
-import java.util.concurrent.ThreadPoolExecutor;
-
 import org.bson.Document;
 import transformer.DBTransformer;
-
 import static data.provider.FormatDataProvider.*;
 
-public class ToMongoDBTransformer
-      implements DBTransformer {
+public class ToMongoDBTransformer implements DBTransformer {
     
-    private static final ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
     private DatabaseDTO databaseDTO;
     private Database from;
     private Database to;
     
     @Override
-    public void transform(Database from, Database to) throws SQLException, InterruptedException {
-        if (!(to instanceof MongoDB) || (from instanceof MongoDB)) {
-            return;
-        }
+    public void transform(Database from, Database to) throws SQLException {
+        if (!(to instanceof MongoDB) || (from instanceof MongoDB)) {return;}
         
         databaseDTO = from.makeDTO();
         this.from = from;
@@ -68,71 +54,72 @@ public class ToMongoDBTransformer
         String selectQuery = "SELECT " + getListOfOldFieldsNames(fields) + " FROM " + tableData.getOldName();
         ResultSet rows = statementFrom.executeQuery(selectQuery);
         
-        // TODO: 11.05.2022 if FK - do sub object
-        
         while (rows.next()) {
-            List<String> fieldsValues = new ArrayList<>();
-            for (String oldFieldName : fields.keySet()) {
-                fieldsValues.add(rows.getString(oldFieldName));
-            }
             Document document = new Document();
-            Map<String, Object> values = new HashMap<>();
-            
-            for (String key : fields.keySet()) {
-                values.put(fields.get(key).getName(), getValue(fields.get(key), fieldsValues.get(0)));
-                fieldsValues.remove(0);
-            }
-            
-            document.putAll(values);
+            document.putAll(getValues(fields, rows, connectionFrom));
             documents.add(document);
         }
         collection.insertMany(documents);
     }
     
-    private Object getValue(FieldDTO field, String value) {
-        Class<?> marker = ((FieldDTOMongoDBTypes) field.getType()).getTypeClass();
-        return marker.cast(value);
-    }
-    
-    private void createAllDocumentsAndFillData() throws InterruptedException {
-        LinkedBlockingQueue<Callable<String>> callablesCreateDocumentsTasks = new LinkedBlockingQueue<>();
+    private DBObject makeSubObject(FieldDTO field, Object value, Connection connection) throws SQLException {
         
-        databaseDTO.getProvider().getDatabaseMetadata().forEach((tableData, fields) -> {
-            try {
-                if (databaseDTO.getMarker() == PostgreSQL.class) {
-                    ToMongoDBTypeConverter.convertAllFields(databaseDTO);
-                    callablesCreateDocumentsTasks.add(new ToMongoDBTransformer.CreateAllDocumentsAndFillDataTask(tableData, fields,
-                                                                                                                 ((PostgreSQL) from).getConnection()));
-                }
+        String oldRelTableName = field.getFK().getRelTableName();
+        String oldRelFieldName = field.getFK().getRelFieldName();
+        
+        Statement statementFrom = connection.createStatement();
+        String selectQuery = "SELECT * FROM " + oldRelTableName + " WHERE " + oldRelFieldName + "=" + value;
+        ResultSet row = statementFrom.executeQuery(selectQuery);
+        
+        Map<String, FieldDTO> fields = new HashMap<>();
+        
+        for (TableData tableData : databaseDTO.getProvider().getDatabaseMetadata().keySet()) {
+            if (tableData.getOldName().equals(oldRelTableName)){
+                fields = databaseDTO.getProvider().getDatabaseMetadata().get(tableData);
             }
-            catch (SQLException e) {
-                //something
-            }
-        });
-        executor.invokeAll(callablesCreateDocumentsTasks);
-        callablesCreateDocumentsTasks.clear();
-    }
-    
-    public static class CreateAllDocumentsAndFillDataTask
-          implements Callable<String> {
-        
-        TableData tableData;
-        Map<String, FieldDTO> fields;
-        Connection connectionFrom;
-        
-        public CreateAllDocumentsAndFillDataTask(TableData tableData, Map<String, FieldDTO> fields, Connection connectionFrom) {
-            this.tableData = tableData;
-            this.fields = fields;
-            this.connectionFrom = connectionFrom;
         }
-        
-        @Override
-        public String call() throws SQLException {
-            ToMongoDBTransformer transformer = new ToMongoDBTransformer();
-            transformer.createCollection(tableData, fields, connectionFrom);
-//            connection.createStatement().executeQuery(transformer.generateSQLForeignKeys(tableDTO));
+        if (row.next()) {
+            return new BasicDBObject(getValues(fields, row, connection));
+        } else {
             return null;
         }
     }
+    private Map<String, Object> getValues(Map<String, FieldDTO> fields, ResultSet res, Connection connection) throws SQLException {
+        
+        Map<String, Object> values = new HashMap<>();
+        for (String oldFieldName : fields.keySet()) {
+            FieldDTO field = fields.get(oldFieldName);
+            if (field.getFK() == null) {
+                System.out.println(res.getObject(oldFieldName));
+                System.out.println(fields.get(oldFieldName).getName());
+                System.out.println("-----------------------");
+                values.put(fields.get(oldFieldName).getName(), res.getObject(oldFieldName));
+            } else {
+                values.put(fields.get(oldFieldName).getName(), makeSubObject(field, res.getObject(oldFieldName), connection));
+            }
+        }
+        return values;
+    }
     
+    
+    
+    private void createAllDocumentsAndFillData() {
+        if (databaseDTO.getMarker() == PostgreSQL.class) {
+            ToMongoDBTypeConverter.convertAllFields(databaseDTO);
+            databaseDTO.getProvider().getDatabaseMetadata().forEach((tableData, fields) -> {
+                try {
+                    
+                    ToMongoDBTypeConverter.convertAllFields(databaseDTO);
+                    if(Objects.equals(tableData.getTableDTO().getName(), "message")) {
+                        System.out.println(tableData.getOldName());
+                    }
+                    createCollection(tableData, fields, ((PostgreSQL) from).getConnection());
+                    
+                }
+                catch (SQLException e) {
+                    //something
+                }
+            });
+        }
+    }
 }
