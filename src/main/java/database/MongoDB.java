@@ -74,7 +74,7 @@ public class MongoDB extends Database {
         Document doc = collection.find().first();
     
         if (doc != null) {
-            makeTable(doc, name, fields);
+            makeTable(doc, name, fields, delimiterForCollectionRootName);
         }
     }
     
@@ -98,7 +98,7 @@ public class MongoDB extends Database {
         }
     }
     
-    private void makeTable(Document document, String name, ArrayList<FieldDTO> fields){
+    private void makeTable(Document document, String name, ArrayList<FieldDTO> fields, String delimiter){
         for (String key : document.keySet()) {
             Object field = document.get(key);
             boolean isPK = key.equals(documentIdFieldName);
@@ -118,7 +118,7 @@ public class MongoDB extends Database {
               new FieldDTO(collectionFieldName, FieldDTOMongoDBTypes.STRING, false,
               new ForeignKeyDTO(collectionTableName, collectionFieldName)));
     
-        makeTable(document, name, fields);
+        makeTable(document, name, fields, delimiterForDocumentRootName);
     }
     
     private void makeTableFromSubObject(DBObject subObject, String tableName){
@@ -139,7 +139,7 @@ public class MongoDB extends Database {
         Set<MongoCollection<Document>> collections = new HashSet<>();
         MongoDatabase db = mongoClient.getDatabase(this.name);
         for (String collectionName :  db.listCollectionNames()) {
-            if (names.contains(collectionName)) {
+            if (names.contains(collectionName) || names.isEmpty()) {
                 collections.add(db.getCollection(collectionName));
             }
         }

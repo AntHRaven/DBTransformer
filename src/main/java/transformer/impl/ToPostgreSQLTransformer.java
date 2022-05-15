@@ -96,15 +96,15 @@ public class ToPostgreSQLTransformer
     
     private void fillTableDataWithCollection(String collectionName, String tableNameOfCollection, Map<String, FieldDTO> fields, MongoClient mongoClient) throws
                                                                                                                                                          SQLException,
-                                                                                                                                                        IOException {
+                                                                                                                                                         IOException {
         MongoDatabase db = mongoClient.getDatabase(databaseDTO.getName());
         MongoCollection<Document> collection = db.getCollection(collectionName);
-      
-        String fileName = "src/main/temp_" + collectionName + ".sql";
-     
+        
         for (Document doc : collection.find()) {
-            fillValues(doc, tableNameOfCollection, collectionName, fields);
+            Map<String, String> values = new HashMap<>();
+            fillValues(doc, tableNameOfCollection, collectionName, fields, values);
         }
+        String fileName = "src/main/temp_" + collectionName + ".sql";
         File file = new File("src/main/temp_" + collectionName + ".sql");
         executeSqlFile(fileName);
         file.delete();
@@ -116,53 +116,57 @@ public class ToPostgreSQLTransformer
         return names.contains(name);
     }
     
-    // from MongoDB
     private void fillTableData(String oldTableName, String newTableName, Map<String, FieldDTO> fields, MongoClient mongoClientFrom) throws SQLException,
                                                                                                                                            IOException {
         String collectionName;
         String documentId;
-        List<String> values = new ArrayList<>();
-    
-        String[] parts = oldTableName.split(delimiter);
-    
+        Map<String, String> values = new HashMap<>();
+        
+        String[] parts = oldTableName.split(delimiterForDocumentRootName);
+        
         collectionName = parts[0];
         documentId = parts[2];
-        values.add(collectionName);
-    
+        values.put(collectionName, fields.get(collectionFieldName).getName());
+        
         MongoDatabase db = mongoClientFrom.getDatabase(databaseDTO.getName());
         MongoCollection<Document> collection = db.getCollection(collectionName);
-    
+        
         Document doc = collection.find(eq("_id", new ObjectId(documentId))).first();
         if (doc != null) {
             String oldName = generateDocumentName(doc, collectionName);
             File file = new File("src/main/temp_" + newTableName + ".sql");
             clearFile(file);
-            fillValues(doc, newTableName, oldName, fields);
+            fillValues(doc, newTableName, oldName, fields, values);
             executeSqlFile(newTableName);
             file.delete();
         }
     }
     
-    private void fillValues(Document doc, String newTableName, String oldTableName, Map<String, FieldDTO> fields) throws IOException, SQLException {
+    private void fillValues(Document doc, String newTableName, String oldTableName, Map<String, FieldDTO> fields, Map<String, String> values) throws IOException, SQLException {
         String fileName = "src/main/temp_" + newTableName + ".sql";
         File file = new File(fileName);
-        List<String> values = new ArrayList<>();
         for (String key : doc.keySet()) {
             Object field = doc.get(key);
             
             //if it's object
             if (field instanceof DBObject) {
-                String subObjectName = oldTableName + delimiter + key;
+                String subObjectName = oldTableName + delimiterForDocumentRootName + key;
                 long id = getUniqueId(subObjectName);
-                values.add(String.valueOf(id));
+                values.put(String.valueOf(id), fields.get(key + documentIdFieldName).getName());
                 fillSubObjectTableData((DBObject) field, subObjectName, id);
                 //if not object
             } else {
-                values.add(doc.get(key).toString());
+                values.put(doc.get(key).toString(), fields.get(key).getName());
             }
         }
+        
+        List<String> fieldsNames = new ArrayList<>();
+        values.keySet().forEach(k -> fieldsNames.add(values.get(k)));
+        
+        List<String> fieldsValues = new ArrayList<>(values.keySet());
+        
         String insertOneRowQuery =
-              "INSERT INTO " + newTableName + " (" + getListOfNewFieldsNames(fields) + ") VALUES (" + getListOfValues(values) + ");\n";
+              "INSERT INTO " + newTableName + "(" + getListOfValues(fieldsNames) + ") VALUES (" + getListOfValues(fieldsValues) + ")";
         fillSqlFile(insertOneRowQuery, fileName);
     }
     

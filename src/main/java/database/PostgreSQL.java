@@ -47,7 +47,7 @@ public class PostgreSQL extends Database {
     private Set<TableDTO> getAllTables() throws SQLException {
         Set<TableDTO> tables = new HashSet<>();
         for (String tableName : getAllTablesNames()) {
-            if (names.contains(tableName)) {
+            if (names.contains(tableName) || names.isEmpty()) {
                 TableDTO tableDTO = new TableDTO(tableName, getAllTableFields(tableName));
                 tables.add(tableDTO);
             }

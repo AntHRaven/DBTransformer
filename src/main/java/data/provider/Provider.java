@@ -1,5 +1,6 @@
 package data.provider;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import data.TableData;
 import dto.DatabaseDTO;
 import dto.FieldDTO;
@@ -14,6 +15,7 @@ import java.util.Map;
 public class Provider {
     
     @Getter
+    @JsonIgnore
     private final DatabaseDTO databaseDTO;
     
     @Getter
