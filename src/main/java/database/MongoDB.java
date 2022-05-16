@@ -85,12 +85,13 @@ public class MongoDB extends Database {
     }
     
     private void addFieldDTO(ArrayList<FieldDTO> fields, String key, String relTableName, Object field, boolean isPK){
+        System.out.println(field.getClass());
         // if object
-        if (field instanceof DBObject) {
+        if (field instanceof Document) {
             fields.add(
                   new FieldDTO(key + documentIdFieldName, FieldDTOMongoDBTypes.OBJECT_ID, isPK,
                                new ForeignKeyDTO(relTableName, documentIdFieldName)));
-            makeTableFromSubObject((DBObject) field, relTableName);
+            makeTableFromSubObject((Document) field, relTableName);
         
         // if not object
         }else {
@@ -121,7 +122,7 @@ public class MongoDB extends Database {
         makeTable(document, name, fields, delimiterForDocumentRootName);
     }
     
-    private void makeTableFromSubObject(DBObject subObject, String tableName){
+    private void makeTableFromSubObject(Document subObject, String tableName){
         
         ArrayList<FieldDTO> fields = new ArrayList<>();
         fields.add(new FieldDTO(documentIdFieldName, FieldDTOMongoDBTypes.OBJECT_ID, true, null));

@@ -74,10 +74,15 @@ public class Provider {
     }
     
     public DatabaseDTO deleteTable(String tableName){
+        TableData tableDataToDelete = null;
         for (TableData table : databaseMetadata.keySet()) {
             if (table.getTableDTO().getName().equals(tableName)){
-                databaseMetadata.remove(table);
+                databaseDTO.getTables().remove(table.getTableDTO());
+                tableDataToDelete = table;
             }
+        }
+        if (tableDataToDelete != null) {
+            databaseMetadata.remove(tableDataToDelete);
         }
         return databaseDTO;
     }
@@ -85,6 +90,12 @@ public class Provider {
     public DatabaseDTO deleteField(String tableName, String fieldName){
         for (TableData table : databaseMetadata.keySet()) {
             if (table.getTableDTO().getName().equals(tableName)){
+                for (TableDTO tableDTO : databaseDTO.getTables()) {
+                    if (tableDTO.equals(table.getTableDTO())){
+                        tableDTO.getFields().removeIf(fieldDTO -> fieldDTO.getName().equals(fieldName));
+                    }
+                }
+                
                 databaseMetadata.get(table).remove(fieldName);
             }
         }

@@ -29,4 +29,12 @@ public class FormatDataProvider {
         }
         return list.substring(0, list.length() - 2);
     }
+    
+    public static String getListOfFields(List<String> fields) {
+        StringBuilder list = new StringBuilder();
+        for (String val : fields) {
+            list.append(val).append(", ");
+        }
+        return list.substring(0, list.length() - 2);
+    }
 }

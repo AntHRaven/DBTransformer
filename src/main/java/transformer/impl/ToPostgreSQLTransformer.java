@@ -1,6 +1,5 @@
 package transformer.impl;
 
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -65,7 +64,7 @@ public class ToPostgreSQLTransformer
     private void fillAllData() throws InterruptedException, SQLException {
         LinkedBlockingQueue<Callable<String>> callablesFillTableDataTasks = new LinkedBlockingQueue<>();
         if (databaseDTO.getMarker() == MongoDB.class) {
-//            ToPostgreSQLTypeConverter.convertAllFields(databaseDTO);
+            ToPostgreSQLTypeConverter.convertAllFields(databaseDTO);
             fillCollectionsTable();
             //can do more threads here (for current table)
             databaseDTO.getProvider().getDatabaseMetadata().forEach((tableData, fields) -> {
@@ -77,6 +76,7 @@ public class ToPostgreSQLTransformer
                         fillTableDataWithCollection(tableData.getOldName(), tableData.getTableDTO().getName(), fields, mongoClient);
     
                     } else if (numOfDelimiters <= 2 & !tableData.getOldName().equals(collectionTableName) ) {
+                        System.out.println("FALSE");
                         callablesFillTableDataTasks.add(
                               new FillTableDataTask(tableData.getOldName(), tableData.getTableDTO().getName(), fields, mongoClient));
                     }
@@ -102,12 +102,10 @@ public class ToPostgreSQLTransformer
         
         for (Document doc : collection.find()) {
             Map<String, String> values = new HashMap<>();
-            fillValues(doc, tableNameOfCollection, collectionName, fields, values);
+            fillValues(doc, tableNameOfCollection, collectionName, fields, values, delimiterForCollectionRootName);
         }
         String fileName = "src/main/temp_" + collectionName + ".sql";
-        File file = new File("src/main/temp_" + collectionName + ".sql");
         executeSqlFile(fileName);
-        file.delete();
     
     }
     
@@ -136,24 +134,23 @@ public class ToPostgreSQLTransformer
             String oldName = generateDocumentName(doc, collectionName);
             File file = new File("src/main/temp_" + newTableName + ".sql");
             clearFile(file);
-            fillValues(doc, newTableName, oldName, fields, values);
+            fillValues(doc, newTableName, oldName, fields, values, delimiterForDocumentRootName);
             executeSqlFile(newTableName);
-            file.delete();
         }
     }
     
-    private void fillValues(Document doc, String newTableName, String oldTableName, Map<String, FieldDTO> fields, Map<String, String> values) throws IOException, SQLException {
+    private void fillValues(Document doc, String newTableName, String oldTableName, Map<String, FieldDTO> fields, Map<String, String> values,
+                            String delimiter) throws IOException, SQLException {
         String fileName = "src/main/temp_" + newTableName + ".sql";
-        File file = new File(fileName);
         for (String key : doc.keySet()) {
             Object field = doc.get(key);
-            
+            System.out.println(key + " = " + doc.get(key).getClass());
             //if it's object
-            if (field instanceof DBObject) {
-                String subObjectName = oldTableName + delimiterForDocumentRootName + key;
+            if (field instanceof Document) {
+                String subObjectName = oldTableName + delimiter + key;
                 long id = getUniqueId(subObjectName);
                 values.put(String.valueOf(id), fields.get(key + documentIdFieldName).getName());
-                fillSubObjectTableData((DBObject) field, subObjectName, id);
+                fillSubObjectTableData((Document) field, subObjectName, id);
                 //if not object
             } else {
                 values.put(doc.get(key).toString(), fields.get(key).getName());
@@ -166,7 +163,7 @@ public class ToPostgreSQLTransformer
         List<String> fieldsValues = new ArrayList<>(values.keySet());
         
         String insertOneRowQuery =
-              "INSERT INTO " + newTableName + "(" + getListOfValues(fieldsNames) + ") VALUES (" + getListOfValues(fieldsValues) + ")";
+              "INSERT INTO " + newTableName + "(" + getListOfFields(fieldsNames) + ") VALUES (" + getListOfValues(fieldsValues) + "); \n";
         fillSqlFile(insertOneRowQuery, fileName);
     }
     
@@ -190,6 +187,8 @@ public class ToPostgreSQLTransformer
         Reader reader = new BufferedReader(new FileReader(fileName));
         ScriptRunner sr = new ScriptRunner(((PostgreSQL) to).getConnection(), false, true);
         sr.runScript(reader);
+        File file = new File(fileName);
+        file.delete();
     }
     
     private void fillCollectionsTable() throws SQLException {
@@ -223,7 +222,7 @@ public class ToPostgreSQLTransformer
         }
     }
     
-    private void fillSubObjectTableData(DBObject ob, String subObjectName, long idInParentTable) throws SQLException {
+    private void fillSubObjectTableData(Document ob, String subObjectName, long idInParentTable) throws SQLException {
         
         String newTableName = "";
         Map<String, FieldDTO> fields = new HashMap<>();
@@ -243,11 +242,11 @@ public class ToPostgreSQLTransformer
             Object field = ob.get(key);
             
             //if it's object
-            if (field instanceof DBObject) {
+            if (field instanceof Document) {
                 String relTableName = subObjectName + key;
                 long id = getUniqueId(relTableName);
                 values.add(String.valueOf(id));
-                fillSubObjectTableData((DBObject) field, relTableName, id);
+                fillSubObjectTableData((Document) field, relTableName, id);
                 //if not object
             }
             else {
@@ -258,6 +257,7 @@ public class ToPostgreSQLTransformer
             String insertOneRowQuery =
                   "INSERT INTO " + newTableName + "(" + getListOfNewFieldsNames(fields) + ") VALUES (" + getListOfValues(values) + ")";
             Statement statementTo = connectionTo.createStatement();
+            System.out.println(insertOneRowQuery);
             statementTo.executeQuery(insertOneRowQuery);
         }
     }

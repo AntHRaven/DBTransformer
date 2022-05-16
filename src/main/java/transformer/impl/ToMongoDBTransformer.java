@@ -6,8 +6,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -28,6 +26,8 @@ public class ToMongoDBTransformer implements DBTransformer {
     private Database from;
     private Database to;
     
+    private List<String> removed = new ArrayList<>();
+    
     @Override
     public void transform(Database from, Database to) throws SQLException {
         if (!(to instanceof MongoDB) || (from instanceof MongoDB)) {return;}
@@ -36,6 +36,9 @@ public class ToMongoDBTransformer implements DBTransformer {
         this.from = from;
         this.to = to;
         
+        for (String tableName : removed) {
+            databaseDTO.getProvider().deleteTable(tableName);
+        }
         createAllDocumentsAndFillData();
     }
     
@@ -62,13 +65,14 @@ public class ToMongoDBTransformer implements DBTransformer {
         collection.insertMany(documents);
     }
     
-    private DBObject makeSubObject(FieldDTO field, Object value, Connection connection) throws SQLException {
+    private Document makeSubObject(FieldDTO field, Object value, Connection connection) throws SQLException {
         
         String oldRelTableName = field.getFK().getRelTableName();
         String oldRelFieldName = field.getFK().getRelFieldName();
         
         Statement statementFrom = connection.createStatement();
-        String selectQuery = "SELECT * FROM " + oldRelTableName + " WHERE " + oldRelFieldName + "=" + value;
+        String selectQuery = "SELECT * FROM " + oldRelTableName + " WHERE " + oldRelFieldName + "=" + "'" + value + "'";
+        System.out.println(selectQuery);
         ResultSet row = statementFrom.executeQuery(selectQuery);
         
         Map<String, FieldDTO> fields = new HashMap<>();
@@ -79,7 +83,7 @@ public class ToMongoDBTransformer implements DBTransformer {
             }
         }
         if (row.next()) {
-            return new BasicDBObject(getValues(fields, row, connection));
+            return new Document(getValues(fields, row, connection));
         } else {
             return null;
         }
@@ -90,12 +94,17 @@ public class ToMongoDBTransformer implements DBTransformer {
         for (String oldFieldName : fields.keySet()) {
             FieldDTO field = fields.get(oldFieldName);
             if (field.getFK() == null) {
-                System.out.println(res.getObject(oldFieldName));
-                System.out.println(fields.get(oldFieldName).getName());
-                System.out.println("-----------------------");
                 values.put(fields.get(oldFieldName).getName(), res.getObject(oldFieldName));
             } else {
                 values.put(fields.get(oldFieldName).getName(), makeSubObject(field, res.getObject(oldFieldName), connection));
+                for (TableData tableData : databaseDTO.getProvider().getDatabaseMetadata().keySet()) {
+                    System.out.println(tableData.getOldName());
+                    System.out.println(field.getFK().getRelTableName());
+                    if (tableData.getOldName().equals(field.getFK().getRelTableName())) {
+                        removed.add(tableData.getTableDTO().getName());
+                        break;
+                    }
+                }
             }
         }
         return values;
@@ -108,16 +117,11 @@ public class ToMongoDBTransformer implements DBTransformer {
             ToMongoDBTypeConverter.convertAllFields(databaseDTO);
             databaseDTO.getProvider().getDatabaseMetadata().forEach((tableData, fields) -> {
                 try {
-                    
-                    ToMongoDBTypeConverter.convertAllFields(databaseDTO);
-                    if(Objects.equals(tableData.getTableDTO().getName(), "message")) {
-                        System.out.println(tableData.getOldName());
-                    }
                     createCollection(tableData, fields, ((PostgreSQL) from).getConnection());
                     
                 }
                 catch (SQLException e) {
-                    //something
+                    e.printStackTrace();
                 }
             });
         }
