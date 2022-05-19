@@ -143,12 +143,10 @@ public class MongoDB extends Database {
         
         List<String> relations = new ArrayList<>();
         
+        name.put(NameType.DOCUMENT, new ArrayList<>(List.of(documentDefName)));
         name.put(NameType.ID, new ArrayList<>(List.of(getDocumentStringId(document))));
         name.put(NameType.COLLECTION, new ArrayList<>(List.of(collection.getNamespace().getCollectionName())));
         name.put(NameType.RELATION, relations);
-        
-        String secondPart = getNameFromMap(name);
-        name.put(NameType.DOCUMENT, new ArrayList<>(List.of(documentDefName + delimiterForNames +secondPart)));
         
         ArrayList<FieldDTO> fields = new ArrayList<>();
         

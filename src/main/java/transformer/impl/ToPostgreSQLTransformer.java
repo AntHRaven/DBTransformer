@@ -91,6 +91,9 @@ public class ToPostgreSQLTransformer
 //                                    currentMapName = map;
 //                                    break loop;
 //                                }
+                            } else if (type.equals(NameType.COLLECTION) && !map.containsKey(NameType.DOCUMENT) && map.get(type).get(0).equals(tableData.getOldName())){
+                                currentMapName = map;
+                                break loop;
                             }
                         }
                     }
