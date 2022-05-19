@@ -39,17 +39,9 @@ public class Main {
         MongoClientURI uri = new MongoClientURI(client_url);
         
         MongoClient mongoClient = new MongoClient(uri);
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("admin");
     
-        mongoDatabase.createCollection("dol.lar");
-        Map<String, Object> map = new HashMap<>();
-        map.put("dol$l.ar", 1L);
-        Document document = new Document();
-        document.putAll(map);
-        MongoCollection<Document> collection = mongoDatabase.getCollection("message");
-        collection.insertOne(document);
         List<String> list = new ArrayList<>();
-//        list.add("usr");
+        list.add("usr");
         list.add("message");
 //        list.add("test");
         
