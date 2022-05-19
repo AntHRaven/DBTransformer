@@ -6,6 +6,7 @@ public enum NameType {
     COLLECTION,
     DOCUMENT,
     ID,
+    SUB_OBJECT,
     RELATION;
 }
 

@@ -97,13 +97,19 @@ public class MongoDB extends Database {
     private void addFieldDTO(ArrayList<FieldDTO> fields, String key, Map<NameType, List<String>> relTableName, Object field, boolean isPK){
         // if object
         if (field instanceof Document) {
-            objectNames.add(relTableName);
+            Map<NameType, List<String>> currentName = new HashMap<>();
+            List<String> relations = new ArrayList<>();
+            
             String name = getNameFromMap(relTableName) + delimiterForNames + key;
+            
+            currentName.put(NameType.SUB_OBJECT, new ArrayList<> (List.of(name)));
+            currentName.put(NameType.RELATION, relations);
             relTableName.get(NameType.RELATION).add(name);
+            
             fields.add(
                   new FieldDTO(key + documentIdFieldName, FieldDTOMongoDBTypes.OBJECT_ID, isPK,
                                new ForeignKeyDTO(name, documentIdFieldName)));
-            makeTableFromSubObject((Document) field, name, relTableName);
+            makeTableFromSubObject((Document) field, name, currentName);
         
         // if not object
         }else {
@@ -116,9 +122,7 @@ public class MongoDB extends Database {
             Object field = document.get(key);
             boolean isPK = key.equals(documentIdFieldName);
     
-            Map<NameType, List<String>> subObjectName = new HashMap<>(name);
-            
-            addFieldDTO(fields, key, subObjectName, field, isPK);
+            addFieldDTO(fields, key, name, field, isPK);
         }
         tables.add(new TableDTO(getNameFromMap(name), fields));
     }
@@ -143,7 +147,7 @@ public class MongoDB extends Database {
         makeTable(document, name, fields);
     }
     
-    private void makeTableFromSubObject(Document subObject, String tableName, Map<NameType, List<String>> relTableName){
+    private void makeTableFromSubObject(Document subObject, String tableName, Map<NameType, List<String>> currentName){
         
         ArrayList<FieldDTO> fields = new ArrayList<>();
         fields.add(new FieldDTO(documentIdFieldName, FieldDTOMongoDBTypes.OBJECT_ID, true, null));
@@ -151,7 +155,7 @@ public class MongoDB extends Database {
         for (String key : subObject.keySet()) {
             
             Object field = subObject.get(key);
-            addFieldDTO(fields, key, relTableName, field, false);
+            addFieldDTO(fields, key, currentName, field, false);
         }
         
         tables.add(new TableDTO(tableName, fields));
