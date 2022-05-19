@@ -19,6 +19,18 @@ repositories {
     mavenCentral()
 }
 
+test {
+    useJUnitPlatform()
+}
+
+sourceSets {
+    test {
+        java {
+            srcDirs = ['src/main/test/java']
+        }
+    }
+}
+
 dependencies {
     implementation 'org.mongodb:mongo-java-driver:3.12.11'
     implementation 'org.postgresql:postgresql:42.3.4'
@@ -27,6 +39,9 @@ dependencies {
     implementation 'org.apache.ibatis:ibatis-sqlmap:2.3.4.726'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.13.3'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.13.3'
+    implementation 'org.junit.jupiter:junit-jupiter:5.8.2'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
 
 
     compileOnly 'org.projectlombok:lombok:1.18.24'
