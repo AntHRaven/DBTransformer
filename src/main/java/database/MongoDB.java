@@ -99,6 +99,7 @@ public class MongoDB extends Database {
         if (field instanceof Document) {
             objectNames.add(relTableName);
             String name = getNameFromMap(relTableName) + delimiterForNames + key;
+            relTableName.get(NameType.RELATION).add(name);
             fields.add(
                   new FieldDTO(key + documentIdFieldName, FieldDTOMongoDBTypes.OBJECT_ID, isPK,
                                new ForeignKeyDTO(name, documentIdFieldName)));
@@ -116,7 +117,6 @@ public class MongoDB extends Database {
             boolean isPK = key.equals(documentIdFieldName);
     
             Map<NameType, List<String>> subObjectName = new HashMap<>(name);
-            subObjectName.get(NameType.RELATION).add(key);
             
             addFieldDTO(fields, key, subObjectName, field, isPK);
         }
@@ -150,7 +150,6 @@ public class MongoDB extends Database {
         
         for (String key : subObject.keySet()) {
             Map<NameType, List<String>> relTableName = new HashMap<>(tableName);
-            relTableName.get(NameType.RELATION).add(key);
             
             Object field = subObject.get(key);
             addFieldDTO(fields, key, relTableName, field, false);
