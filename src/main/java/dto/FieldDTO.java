@@ -8,10 +8,11 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 public class FieldDTO {
-    @Setter
-    private String name;
-    @Setter
-    private FieldDTOTypes type;
-    private boolean isPK;
-    private ForeignKeyDTO FK;
+
+  @Setter
+  private String name;
+  @Setter
+  private FieldDTOTypes type;
+  private boolean isPK;
+  private ForeignKeyDTO FK;
 }

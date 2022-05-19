@@ -6,8 +6,9 @@ import lombok.Getter;
 @AllArgsConstructor
 @Getter
 public class ForeignKeyDTO {
-    private String relTableName;
-    private String relFieldName;
-    
+
+  private String relTableName;
+  private String relFieldName;
+
 }
 
