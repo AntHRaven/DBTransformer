@@ -80,6 +80,7 @@ public class ToPostgreSQLTransformer
                     for (Map<NameType, List<String>> map : objectNames) {
                         if (map.containsKey(NameType.DOCUMENT) && getNameFromMap(map).equals(tableData.getOldName())){
                             isDocument = true;
+                            currentMapName = map;
                             break;
                         } else if (map.containsKey(NameType.COLLECTION) && !map.containsKey(NameType.DOCUMENT) && getNameFromMap(map).equals(tableData.getOldName())){
                             currentMapName = map;
@@ -160,6 +161,8 @@ public class ToPostgreSQLTransformer
                             Map<String, FieldDTO> fields, Map<String, String> values) throws IOException, SQLException {
         
         String oldTableName = getNameFromMap(currentMapName);
+    
+        System.out.println("OldTableName: " + oldTableName);
         
         String fileName = "src/main/temp_" + newTableName + ".sql";
         for (String key : doc.keySet()) {
@@ -168,18 +171,19 @@ public class ToPostgreSQLTransformer
             if (field instanceof Document) {
                 String subObjectName = oldTableName + delimiterForNames + key;
     
-//                for (NameType t : currentMapName.keySet()) {
-//                    if (currentMapName.get(t).equals())
-//                }
-                
+                System.out.println("Object: " + key + " - subObjectName = " + subObjectName);
+                System.out.println("Relational: " + currentMapName.get(NameType.RELATION).get(0));
                 
                 long id = getUniqueId(subObjectName);
                 values.put(String.valueOf(id), fields.get(key + documentIdFieldName).getName());
+                System.out.println("---------------------");
                 fillSubObjectTableData((Document) field, subObjectName, id);
                 //if not object
             }
             else {
+                System.out.println("Not object: " + key);
                 values.put(doc.get(key).toString(), fields.get(key).getName());
+                System.out.println("---------------------");
             }
         }
         
@@ -249,6 +253,8 @@ public class ToPostgreSQLTransformer
     }
     
     private void fillSubObjectTableData(Document ob, String subObjectName, long idInParentTable) throws SQLException {
+    
+        System.out.println("Come to fillSubObjectTableData");
         
         String newTableName = "";
         Map<String, FieldDTO> fields = new HashMap<>();
