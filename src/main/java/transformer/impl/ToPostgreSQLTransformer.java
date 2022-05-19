@@ -77,24 +77,13 @@ public class ToPostgreSQLTransformer
     
                     Map<NameType, List<String>> currentMapName = new HashMap<>();
     
-                    loop:
                     for (Map<NameType, List<String>> map : objectNames) {
-                        for (NameType type : map.keySet()){
-                            if (!type.equals(NameType.RELATION) && !type.equals(NameType.COLLECTION) && map.get(type).get(0).equals(tableData.getOldName())){
-                                if (type.equals(NameType.DOCUMENT)) {
-                                    isDocument = true;
-                                    currentMapName = map;
-                                    break loop;
-                                }
-//                                else if (type.equals(NameType.SUB_OBJECT)){
-//                                    isSubObject = true;
-//                                    currentMapName = map;
-//                                    break loop;
-//                                }
-                            } else if (type.equals(NameType.COLLECTION) && !map.containsKey(NameType.DOCUMENT) && map.get(type).get(0).equals(tableData.getOldName())){
-                                currentMapName = map;
-                                break loop;
-                            }
+                        if (map.containsKey(NameType.DOCUMENT) && getNameFromMap(map).equals(tableData.getOldName())){
+                            isDocument = true;
+                            break;
+                        } else if (map.containsKey(NameType.COLLECTION) && !map.containsKey(NameType.DOCUMENT) && getNameFromMap(map).equals(tableData.getOldName())){
+                            currentMapName = map;
+                            break;
                         }
                     }
                     
