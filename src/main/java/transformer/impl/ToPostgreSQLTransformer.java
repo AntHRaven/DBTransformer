@@ -74,11 +74,19 @@ public class ToPostgreSQLTransformer
                     if (isCollectionName(tableData.getOldName())) {
                         // that means - tableDTO is document (not sub object)
                         fillTableDataWithCollection(tableData.getOldName(), tableData.getTableDTO().getName(), fields, mongoClient);
-    
-                    } else if (numOfDelimiters <= 2 & !tableData.getOldName().equals(collectionTableName) ) {
-                        System.out.println("FALSE");
-                        callablesFillTableDataTasks.add(
-                              new FillTableDataTask(tableData.getOldName(), tableData.getTableDTO().getName(), fields, mongoClient));
+                        fillTableDataWithCollection(tableData.getOldName(), tableData.getTableDTO().getName(), fields, mongoClient);
+                        
+                    }
+                    else if (numOfDelimiters <= 2 & !tableData.getOldName().equals(collectionTableName)) {
+                        if (tableData.getOldName().contains(delimiterForCollectionRootName)) {
+                            callablesFillTableDataTasks.add(
+                                  new FillTableDataTask(tableData.getOldName(), tableData.getTableDTO().getName(), fields, mongoClient, delimiterForCollectionRootName));
+        
+                        } else {
+                            callablesFillTableDataTasks.add(
+                                  new FillTableDataTask(tableData.getOldName(), tableData.getTableDTO().getName(), fields, mongoClient, delimiterForDocumentRootName));
+        
+                        }
                     }
                 }
                 catch (SQLException | IOException e) {
@@ -86,7 +94,7 @@ public class ToPostgreSQLTransformer
                 }
             });
         }
-    
+        
         ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(5);
         executor.invokeAll(callablesFillTableDataTasks);
         callablesFillTableDataTasks.clear();
@@ -94,9 +102,12 @@ public class ToPostgreSQLTransformer
         
     }
     
-    private void fillTableDataWithCollection(String collectionName, String tableNameOfCollection, Map<String, FieldDTO> fields, MongoClient mongoClient) throws
-                                                                                                                                                         SQLException,
-                                                                                                                                                         IOException {
+    private void fillTableDataWithCollection(String collectionName,
+                                             String tableNameOfCollection,
+                                             Map<String, FieldDTO> fields,
+                                             MongoClient mongoClient) throws
+                                                                      SQLException,
+                                                                      IOException {
         MongoDatabase db = mongoClient.getDatabase(databaseDTO.getName());
         MongoCollection<Document> collection = db.getCollection(collectionName);
         
@@ -106,21 +117,21 @@ public class ToPostgreSQLTransformer
         }
         String fileName = "src/main/temp_" + collectionName + ".sql";
         executeSqlFile(fileName);
-    
+        
     }
     
-    private boolean isCollectionName(String name){
+    private boolean isCollectionName(String name) {
         List<String> names = from.getNames();
         return names.contains(name);
     }
     
-    private void fillTableData(String oldTableName, String newTableName, Map<String, FieldDTO> fields, MongoClient mongoClientFrom) throws SQLException,
-                                                                                                                                           IOException {
+    private void fillTableData(String oldTableName, String newTableName, Map<String, FieldDTO> fields, MongoClient mongoClientFrom, String delimiter) throws SQLException,
+                                                                                                                                                             IOException {
         String collectionName;
         String documentId;
         Map<String, String> values = new HashMap<>();
         
-        String[] parts = oldTableName.split(delimiterForDocumentRootName);
+        String[] parts = oldTableName.split(delimiter);
         
         collectionName = parts[0];
         documentId = parts[2];
@@ -136,6 +147,7 @@ public class ToPostgreSQLTransformer
             clearFile(file);
             fillValues(doc, newTableName, oldName, fields, values, delimiterForDocumentRootName);
             executeSqlFile(newTableName);
+            file.delete();
         }
     }
     
@@ -152,7 +164,8 @@ public class ToPostgreSQLTransformer
                 values.put(String.valueOf(id), fields.get(key + documentIdFieldName).getName());
                 fillSubObjectTableData((Document) field, subObjectName, id);
                 //if not object
-            } else {
+            }
+            else {
                 values.put(doc.get(key).toString(), fields.get(key).getName());
             }
         }
@@ -168,7 +181,7 @@ public class ToPostgreSQLTransformer
     }
     
     private void clearFile(File file) throws IOException {
-     
+        
         PrintWriter writer = new PrintWriter(file);
         writer.print("");
         writer.close();
@@ -177,7 +190,7 @@ public class ToPostgreSQLTransformer
     public void fillSqlFile(String query, String filename) throws IOException {
 //        System.out.println("QUERY: " + query);
         File file = new File(filename);
-        if(!file.exists()) {
+        if (!file.exists()) {
             file.createNewFile();
         }
         Files.write(Paths.get(filename), query.getBytes(), StandardOpenOption.APPEND);
@@ -192,16 +205,16 @@ public class ToPostgreSQLTransformer
     }
     
     private void fillCollectionsTable() throws SQLException {
-    
+        
         List<String> names = from.getNames();
         String collectionTableNewName = null;
         String collectionNewFieldName = null;
         
         for (TableData tableData : databaseDTO.getProvider().getDatabaseMetadata().keySet()) {
-            if (tableData.getOldName().equals(collectionTableName)){
+            if (tableData.getOldName().equals(collectionTableName)) {
                 collectionTableNewName = tableData.getTableDTO().getName();
                 for (String oldName : databaseDTO.getProvider().getDatabaseMetadata().get(tableData).keySet()) {
-                    if (oldName.equals(collectionFieldName)){
+                    if (oldName.equals(collectionFieldName)) {
                         collectionNewFieldName = databaseDTO.getProvider().getDatabaseMetadata().get(tableData).get(oldName).getName();
                         break;
                     }
@@ -294,7 +307,7 @@ public class ToPostgreSQLTransformer
         for (TableDTO table : databaseDTO.getTables()) {
             callablesCreateTableTasks.add(new GenerateSQLCreateTableTask(table, ((PostgreSQL) to).getConnection()));
         }
-    
+        
         ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(5);
         executor.invokeAll(callablesCreateTableTasks);
         callablesCreateTableTasks.clear();
@@ -345,14 +358,14 @@ public class ToPostgreSQLTransformer
     }
     
     public String generateSQLCreateTable(TableDTO table) {
-        return "create table if not exists " +
-               table.getName() +
+        return "create table if not exists " + "\"" +
+               table.getName() + "\"" +
                " ( " +
                generateSQLFields(table.getFields()) +
                "); ";
     }
     
-    public static class GenerateSQLCreateTableTask
+    public class GenerateSQLCreateTableTask
           implements Callable<String> {
         TableDTO tableDTO;
         Connection connection;
@@ -364,13 +377,12 @@ public class ToPostgreSQLTransformer
         
         @Override
         public String call() throws SQLException {
-            ToPostgreSQLTransformer transformer = new ToPostgreSQLTransformer();
-            connection.createStatement().executeQuery(transformer.generateSQLCreateTable(tableDTO));
+            connection.createStatement().executeQuery(generateSQLCreateTable(tableDTO));
             return null;
         }
     }
     
-    public static class GenerateSQLForeignKeysTask
+    public class GenerateSQLForeignKeysTask
           implements Callable<String> {
         TableDTO tableDTO;
         Connection connection;
@@ -382,31 +394,30 @@ public class ToPostgreSQLTransformer
         
         @Override
         public String call() throws SQLException {
-            ToPostgreSQLTransformer transformer = new ToPostgreSQLTransformer();
-            connection.createStatement().executeQuery(transformer.generateSQLForeignKeys(tableDTO));
+            connection.createStatement().executeQuery(generateSQLForeignKeys(tableDTO));
             return null;
         }
     }
     
-    public static class FillTableDataTask
+    public class FillTableDataTask
           implements Callable<String> {
         String oldTableName;
         String newTableName;
         Map<String, FieldDTO> fields;
         MongoClient mongoClientFrom;
-        
-        public FillTableDataTask(String oldTableName, String newTableName, Map<String, FieldDTO> fields, MongoClient mongoClientFrom) {
+        String delimiter;
+    
+        public FillTableDataTask(String oldTableName, String newTableName, Map<String, FieldDTO> fields, MongoClient mongoClientFrom, String delimiter) {
             this.oldTableName = oldTableName;
             this.newTableName = newTableName;
             this.fields = fields;
             this.mongoClientFrom = mongoClientFrom;
+            this.delimiter = delimiter;
         }
-        
-        
+    
         @Override
         public String call() throws SQLException, IOException {
-            ToPostgreSQLTransformer transformer = new ToPostgreSQLTransformer();
-            transformer.fillTableData(oldTableName, newTableName, fields, mongoClientFrom);
+            fillTableData(oldTableName, newTableName, fields, mongoClientFrom, delimiter);
             return null;
         }
     }

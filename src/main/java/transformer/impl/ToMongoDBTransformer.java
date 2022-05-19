@@ -26,7 +26,7 @@ public class ToMongoDBTransformer implements DBTransformer {
     private Database from;
     private Database to;
     
-    private List<String> removed = new ArrayList<>();
+    private final Set<String> removed = new HashSet<>();
     
     @Override
     public void transform(Database from, Database to) throws SQLException {
@@ -35,11 +35,14 @@ public class ToMongoDBTransformer implements DBTransformer {
         databaseDTO = from.makeDTO();
         this.from = from;
         this.to = to;
-        
+    
+        createAllDocumentsAndFillData();
         for (String tableName : removed) {
             databaseDTO.getProvider().deleteTable(tableName);
+            MongoClient mongoClient = ((MongoDB) to).getMongoClient();
+            MongoDatabase db = mongoClient.getDatabase(to.getName());
+            db.getCollection(tableName).drop();
         }
-        createAllDocumentsAndFillData();
     }
     
     // from PostgreSQL

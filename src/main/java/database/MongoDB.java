@@ -61,7 +61,7 @@ public class MongoDB extends Database {
             List<String> docFields = new ArrayList<>(doc.keySet());
             for (int i = 0; i < keys.size(); i++){
                 if (!keys.get(i).equals(docFields.get(i))){
-                    return false;
+                        return false;
                 }
             }
         }

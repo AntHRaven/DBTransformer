@@ -1,5 +1,6 @@
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import database.Database;
 import database.MongoDB;
@@ -7,10 +8,13 @@ import database.PostgreSQL;
 import dto.DatabaseDTO;
 import dto.TableDTO;
 import manager.DBTManager;
+import org.bson.Document;
 import org.postgresql.ds.PGConnectionPoolDataSource;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Main {
     
@@ -35,12 +39,19 @@ public class Main {
         MongoClientURI uri = new MongoClientURI(client_url);
         
         MongoClient mongoClient = new MongoClient(uri);
-        MongoDatabase mongoDatabase = mongoClient.getDatabase("DBName");
-        
+        MongoDatabase mongoDatabase = mongoClient.getDatabase("admin");
+    
+        mongoDatabase.createCollection("dol.lar");
+        Map<String, Object> map = new HashMap<>();
+        map.put("dol$l.ar", 1L);
+        Document document = new Document();
+        document.putAll(map);
+        MongoCollection<Document> collection = mongoDatabase.getCollection("message");
+        collection.insertOne(document);
         List<String> list = new ArrayList<>();
-        list.add("usr");
+//        list.add("usr");
         list.add("message");
-        list.add("test");
+//        list.add("test");
         
         List<String> mongoList = new ArrayList<>();
         mongoList.add("admin");
@@ -49,13 +60,10 @@ public class Main {
         Database postgre2 = new PostgreSQL("secondDataBase", postgresqlConnectionSecond, list);
         Database mongo = new MongoDB("admin", mongoClient, list);
         DBTManager dbtManager = new DBTManager();
-        DatabaseDTO databaseDTO = postgre1.makeDTO();
-        mongo.makeDTO().getTables().forEach((item) -> {
-            System.out.println(item.getName());
-        });
-        System.out.println(postgre1.makeDTO());
-//        dbtManager.transform(mongo, postgre2);
-        dbtManager.transform(postgre1, mongo);
+        DatabaseDTO databaseDTO = mongo.makeDTO();
+       
+        dbtManager.transform(mongo, postgre2);
+//        dbtManager.transform(postgre1, mongo);
         System.out.println("DONE");
     }
 }
