@@ -106,8 +106,6 @@ public class MongoDB extends Database {
             currentName.put(NameType.RELATION, relations);
             relTableName.get(NameType.RELATION).add(name);
             
-            objectNames.add(currentName);
-            
             fields.add(
                   new FieldDTO(key + documentIdFieldName, FieldDTOMongoDBTypes.OBJECT_ID, isPK,
                                new ForeignKeyDTO(name, documentIdFieldName)));
@@ -159,7 +157,7 @@ public class MongoDB extends Database {
             Object field = subObject.get(key);
             addFieldDTO(fields, key, currentName, field, false);
         }
-        
+        objectNames.add(currentName);
         tables.add(new TableDTO(tableName, fields));
     }
     
