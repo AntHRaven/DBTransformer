@@ -1,8 +1,11 @@
 package data.provider;
 
+import data.NameType;
 import dto.FieldDTO;
 import java.util.List;
 import java.util.Map;
+
+import static data.provider.MongoDBStringConstantsProvider.delimiterForNames;
 
 public class FormatDataProvider {
     
@@ -36,5 +39,22 @@ public class FormatDataProvider {
             list.append(val).append(", ");
         }
         return list.substring(0, list.length() - 2);
+    }
+    
+    public static String getNameFromMap(Map<NameType, List<String>> map){
+        
+        StringBuilder name = new StringBuilder();
+    
+        if (map.containsKey(NameType.DOCUMENT)) {
+            name.append(map.get(NameType.COLLECTION).get(0))
+                  .append(delimiterForNames)
+                  .append(map.get(NameType.DOCUMENT).get(0))
+                  .append(delimiterForNames)
+                  .append(map.get(NameType.ID).get(0));
+        } else {
+            name.append(map.get(NameType.COLLECTION).get(0));
+        }
+        
+        return name.toString();
     }
 }

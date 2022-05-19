@@ -121,7 +121,7 @@ public class ToPostgreSQLTransformer
     }
     
     private boolean isCollectionName(String name) {
-        List<String> names = from.getNames();
+        List<String> names = from.getObjectNAmes();
         return names.contains(name);
     }
     
@@ -206,7 +206,7 @@ public class ToPostgreSQLTransformer
     
     private void fillCollectionsTable() throws SQLException {
         
-        List<String> names = from.getNames();
+        List<String> names = from.getObjectNAmes();
         String collectionTableNewName = null;
         String collectionNewFieldName = null;
         
