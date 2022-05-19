@@ -80,7 +80,7 @@ public class ToPostgreSQLTransformer
                     loop:
                     for (Map<NameType, List<String>> map : objectNames) {
                         for (NameType type : map.keySet()){
-                            if (map.get(type).get(0).equals(tableData.getOldName()) && !type.equals(NameType.RELATION) && !type.equals(NameType.COLLECTION)){
+                            if (!type.equals(NameType.RELATION) && !type.equals(NameType.COLLECTION) && map.get(type).get(0).equals(tableData.getOldName())){
                                 if (type.equals(NameType.DOCUMENT)) {
                                     isDocument = true;
                                     currentMapName = map;
