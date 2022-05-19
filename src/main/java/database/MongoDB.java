@@ -60,15 +60,24 @@ public class MongoDB extends Database {
     // check if all fields in all documents of current collection are the same
     private boolean isIdenticalDocumentFields(MongoCollection<Document> collection){
         List<String> keys = new ArrayList<>(Objects.requireNonNull(collection.find().first()).keySet());
+        Set<Integer> sizes = new HashSet<>();
         for (Document doc : collection.find()) {
-            List<String> docFields = new ArrayList<>(doc.keySet());
-            for (int i = 0; i < keys.size(); i++){
-                if (!keys.get(i).equals(docFields.get(i))){
+            sizes.add(doc.keySet().size());
+        }
+        
+        if (sizes.size() == 1) {
+            for (Document doc : collection.find()) {
+                List<String> docFields = new ArrayList<>(doc.keySet());
+                for (int i = 0; i < keys.size(); i++) {
+                    if (!keys.get(i).equals(docFields.get(i))) {
                         return false;
+                    }
                 }
             }
+            return true;
+        } else {
+            return false;
         }
-        return true;
     }
     
     private void makeTableFromCollection(MongoCollection<Document> collection){

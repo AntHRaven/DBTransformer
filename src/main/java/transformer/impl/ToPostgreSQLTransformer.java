@@ -4,12 +4,11 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import converter.ToPostgreSQLTypeConverter;
-
 import static com.mongodb.client.model.Filters.eq;
 import static data.provider.FormatDataProvider.*;
 import static data.provider.MongoDBStringConstantsProvider.*;
-
 import converter.types.FieldDTOPostgreSQLTypes;
+import data.NameType;
 import data.TableData;
 import database.Database;
 import database.MongoDB;
@@ -42,14 +41,16 @@ public class ToPostgreSQLTransformer
     private Database to;
     private Database from;
     private final Map<String, Long> u_id = new HashMap<>();
+    private List<Map<NameType, List<String>>> objectNames;
     
     @Override
     public void transform(Database from, Database to) throws SQLException {
-//        if (!(to instanceof PostgreSQL) || (from instanceof PostgreSQL)) return;
+        if (!(to instanceof PostgreSQL) || (from instanceof PostgreSQL)) return;
         
         databaseDTO = from.makeDTO();
         this.from = from;
         this.to = to;
+        objectNames = ((MongoDB) from).getObjectNames();
         
         try {
             createTables(databaseDTO, to);
@@ -69,24 +70,39 @@ public class ToPostgreSQLTransformer
             //can do more threads here (for current table)
             databaseDTO.getProvider().getDatabaseMetadata().forEach((tableData, fields) -> {
                 try {
+                    
                     MongoClient mongoClient = ((MongoDB) from).getMongoClient();
-                    long numOfDelimiters = tableData.getOldName().chars().filter(c -> c == '_').count();
-                    if (isCollectionName(tableData.getOldName())) {
-                        // that means - tableDTO is document (not sub object)
-                        fillTableDataWithCollection(tableData.getOldName(), tableData.getTableDTO().getName(), fields, mongoClient);
-                        fillTableDataWithCollection(tableData.getOldName(), tableData.getTableDTO().getName(), fields, mongoClient);
-                        
-                    }
-                    else if (numOfDelimiters <= 2 & !tableData.getOldName().equals(collectionTableName)) {
-                        if (tableData.getOldName().contains(delimiterForCollectionRootName)) {
-                            callablesFillTableDataTasks.add(
-                                  new FillTableDataTask(tableData.getOldName(), tableData.getTableDTO().getName(), fields, mongoClient, delimiterForCollectionRootName));
-        
-                        } else {
-                            callablesFillTableDataTasks.add(
-                                  new FillTableDataTask(tableData.getOldName(), tableData.getTableDTO().getName(), fields, mongoClient, delimiterForDocumentRootName));
-        
+                    boolean isDocument = false;
+                    //boolean isSubObject = false;
+    
+                    Map<NameType, List<String>> currentMapName = new HashMap<>();
+    
+                    loop:
+                    for (Map<NameType, List<String>> map : objectNames) {
+                        for (NameType type : map.keySet()){
+                            if (map.get(type).get(0).equals(tableData.getOldName()) && !type.equals(NameType.RELATION) && !type.equals(NameType.COLLECTION)){
+                                if (type.equals(NameType.DOCUMENT)) {
+                                    isDocument = true;
+                                    currentMapName = map;
+                                    break loop;
+                                }
+//                                else if (type.equals(NameType.SUB_OBJECT)){
+//                                    isSubObject = true;
+//                                    currentMapName = map;
+//                                    break loop;
+//                                }
+                            }
                         }
+                    }
+                    
+                    if (isCollectionName(tableData.getOldName())) {
+                        fillTableDataWithCollection(currentMapName, tableData.getOldName(), tableData.getTableDTO().getName(), fields,
+                                                    mongoClient);
+                        
+                    } else if (isDocument) {
+                        callablesFillTableDataTasks.add(
+                              new FillTableDataTask(currentMapName, tableData.getTableDTO().getName(),
+                                                    fields, mongoClient));
                     }
                 }
                 catch (SQLException | IOException e) {
@@ -102,7 +118,13 @@ public class ToPostgreSQLTransformer
         
     }
     
-    private void fillTableDataWithCollection(String collectionName,
+    private boolean isCollectionName(String name) {
+        List<String> names = from.getNames();
+        return names.contains(name);
+    }
+    
+    private void fillTableDataWithCollection(Map<NameType, List<String>> currentMapName,
+                                             String collectionName,
                                              String tableNameOfCollection,
                                              Map<String, FieldDTO> fields,
                                              MongoClient mongoClient) throws
@@ -113,28 +135,20 @@ public class ToPostgreSQLTransformer
         
         for (Document doc : collection.find()) {
             Map<String, String> values = new HashMap<>();
-            fillValues(doc, tableNameOfCollection, collectionName, fields, values, delimiterForCollectionRootName);
+            fillValues(NameType.COLLECTION, currentMapName, doc, tableNameOfCollection, fields, values);
         }
         String fileName = "src/main/temp_" + collectionName + ".sql";
         executeSqlFile(fileName);
         
     }
     
-    private boolean isCollectionName(String name) {
-        List<String> names = from.getObjectNAmes();
-        return names.contains(name);
-    }
-    
-    private void fillTableData(String oldTableName, String newTableName, Map<String, FieldDTO> fields, MongoClient mongoClientFrom, String delimiter) throws SQLException,
+    private void fillTableData(Map<NameType, List<String>> currentMapName, String newTableName, Map<String, FieldDTO> fields,
+                               MongoClient mongoClientFrom) throws SQLException,
                                                                                                                                                              IOException {
-        String collectionName;
-        String documentId;
+        String collectionName = currentMapName.get(NameType.COLLECTION).get(0);
+        String documentId = currentMapName.get(NameType.ID).get(0);
         Map<String, String> values = new HashMap<>();
         
-        String[] parts = oldTableName.split(delimiter);
-        
-        collectionName = parts[0];
-        documentId = parts[2];
         values.put(collectionName, fields.get(collectionFieldName).getName());
         
         MongoDatabase db = mongoClientFrom.getDatabase(databaseDTO.getName());
@@ -142,24 +156,31 @@ public class ToPostgreSQLTransformer
         
         Document doc = collection.find(eq("_id", new ObjectId(documentId))).first();
         if (doc != null) {
-            String oldName = generateDocumentName(doc, collectionName);
             File file = new File("src/main/temp_" + newTableName + ".sql");
             clearFile(file);
-            fillValues(doc, newTableName, oldName, fields, values, delimiterForDocumentRootName);
+            fillValues(NameType.DOCUMENT, currentMapName, doc, newTableName, fields, values);
             executeSqlFile(newTableName);
             file.delete();
         }
     }
     
-    private void fillValues(Document doc, String newTableName, String oldTableName, Map<String, FieldDTO> fields, Map<String, String> values,
-                            String delimiter) throws IOException, SQLException {
+    private void fillValues(NameType type, Map<NameType, List<String>> currentMapName, Document doc, String newTableName,
+                            Map<String, FieldDTO> fields, Map<String, String> values) throws IOException, SQLException {
+        
+        String oldTableName = getNameFromMap(currentMapName);
+        
         String fileName = "src/main/temp_" + newTableName + ".sql";
         for (String key : doc.keySet()) {
             Object field = doc.get(key);
-            System.out.println(key + " = " + doc.get(key).getClass());
             //if it's object
             if (field instanceof Document) {
-                String subObjectName = oldTableName + delimiter + key;
+                String subObjectName = oldTableName + delimiterForNames + key;
+    
+//                for (NameType t : currentMapName.keySet()) {
+//                    if (currentMapName.get(t).equals())
+//                }
+                
+                
                 long id = getUniqueId(subObjectName);
                 values.put(String.valueOf(id), fields.get(key + documentIdFieldName).getName());
                 fillSubObjectTableData((Document) field, subObjectName, id);
@@ -205,8 +226,8 @@ public class ToPostgreSQLTransformer
     }
     
     private void fillCollectionsTable() throws SQLException {
-        
-        List<String> names = from.getObjectNAmes();
+    
+        List<String> names = from.getNames();
         String collectionTableNewName = null;
         String collectionNewFieldName = null;
         
@@ -401,23 +422,23 @@ public class ToPostgreSQLTransformer
     
     public class FillTableDataTask
           implements Callable<String> {
-        String oldTableName;
         String newTableName;
         Map<String, FieldDTO> fields;
         MongoClient mongoClientFrom;
-        String delimiter;
+        Map<NameType, List<String>> currentName;
     
-        public FillTableDataTask(String oldTableName, String newTableName, Map<String, FieldDTO> fields, MongoClient mongoClientFrom, String delimiter) {
-            this.oldTableName = oldTableName;
+        public FillTableDataTask(Map<NameType, List<String>> currentName, String newTableName,
+                                 Map<String, FieldDTO> fields,
+                                 MongoClient mongoClientFrom) {
             this.newTableName = newTableName;
             this.fields = fields;
             this.mongoClientFrom = mongoClientFrom;
-            this.delimiter = delimiter;
+            this.currentName = currentName;
         }
     
         @Override
         public String call() throws SQLException, IOException {
-            fillTableData(oldTableName, newTableName, fields, mongoClientFrom, delimiter);
+            fillTableData(currentName, newTableName, fields, mongoClientFrom);
             return null;
         }
     }
