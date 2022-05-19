@@ -169,13 +169,27 @@ public class ToPostgreSQLTransformer
             Object field = doc.get(key);
             //if it's object
             if (field instanceof Document) {
+    
                 String subObjectName = oldTableName + delimiterForNames + key;
+                Map<String, FieldDTO> subObjectFields = new HashMap<>();
+    
+                for (TableData tableData : databaseDTO.getProvider().getDatabaseMetadata().keySet()) {
+                    if (tableData.getOldName().equals(subObjectName)){
+                        subObjectFields = databaseDTO.getProvider().getDatabaseMetadata().get(tableData);
+                    }
+                }
     
                 System.out.println("Object: " + key + " - subObjectName = " + subObjectName);
                 System.out.println("Relational: " + currentMapName.get(NameType.RELATION).get(0));
+    
+                System.out.println("================");
+                for (String k : subObjectFields.keySet()) {
+                    System.out.println(k);
+                }
+                System.out.println("================");
                 
                 long id = getUniqueId(subObjectName);
-                values.put(String.valueOf(id), fields.get(key + documentIdFieldName).getName());
+                values.put(String.valueOf(id), subObjectFields.get(key + documentIdFieldName).getName());
                 System.out.println("---------------------");
                 fillSubObjectTableData((Document) field, subObjectName, id);
                 //if not object
