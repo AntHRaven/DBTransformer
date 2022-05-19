@@ -103,7 +103,7 @@ public class MongoDB extends Database {
             fields.add(
                   new FieldDTO(key + documentIdFieldName, FieldDTOMongoDBTypes.OBJECT_ID, isPK,
                                new ForeignKeyDTO(name, documentIdFieldName)));
-            makeTableFromSubObject((Document) field, relTableName);
+            makeTableFromSubObject((Document) field, name, relTableName);
         
         // if not object
         }else {
@@ -143,19 +143,18 @@ public class MongoDB extends Database {
         makeTable(document, name, fields);
     }
     
-    private void makeTableFromSubObject(Document subObject, Map<NameType, List<String>> tableName){
+    private void makeTableFromSubObject(Document subObject, String tableName, Map<NameType, List<String>> relTableName){
         
         ArrayList<FieldDTO> fields = new ArrayList<>();
         fields.add(new FieldDTO(documentIdFieldName, FieldDTOMongoDBTypes.OBJECT_ID, true, null));
         
         for (String key : subObject.keySet()) {
-            Map<NameType, List<String>> relTableName = new HashMap<>(tableName);
             
             Object field = subObject.get(key);
             addFieldDTO(fields, key, relTableName, field, false);
         }
         
-        tables.add(new TableDTO(getNameFromMap(tableName), fields));
+        tables.add(new TableDTO(tableName, fields));
     }
     
     private Set<MongoCollection<Document>> getAllCollections(){
