@@ -51,6 +51,8 @@ public class FormatDataProvider {
                   .append(map.get(NameType.DOCUMENT).get(0))
                   .append(delimiterForNames)
                   .append(map.get(NameType.ID).get(0));
+        } else if (map.containsKey(NameType.SUB_OBJECT))  {
+            name.append(map.get(NameType.SUB_OBJECT).get(0));
         } else {
             name.append(map.get(NameType.COLLECTION).get(0));
         }
