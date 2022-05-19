@@ -15,7 +15,6 @@ import org.bson.Document;
 import transformer.DBTransformer;
 import transformer.impl.ToMongoDBTransformer;
 import java.util.*;
-
 import static data.provider.FormatDataProvider.getNameFromMap;
 import static data.provider.MongoDBStringConstantsProvider.*;
 
@@ -98,6 +97,7 @@ public class MongoDB extends Database {
     private void addFieldDTO(ArrayList<FieldDTO> fields, String key, Map<NameType, List<String>> relTableName, Object field, boolean isPK){
         // if object
         if (field instanceof Document) {
+            objectNames.add(relTableName);
             String name = getNameFromMap(relTableName) + delimiterForNames + key;
             fields.add(
                   new FieldDTO(key + documentIdFieldName, FieldDTOMongoDBTypes.OBJECT_ID, isPK,
@@ -117,7 +117,6 @@ public class MongoDB extends Database {
     
             Map<NameType, List<String>> subObjectName = new HashMap<>(name);
             subObjectName.get(NameType.RELATION).add(key);
-            objectNames.add(subObjectName);
             
             addFieldDTO(fields, key, subObjectName, field, isPK);
         }
@@ -152,7 +151,6 @@ public class MongoDB extends Database {
         for (String key : subObject.keySet()) {
             Map<NameType, List<String>> relTableName = new HashMap<>(tableName);
             relTableName.get(NameType.RELATION).add(key);
-            objectNames.add(relTableName);
             
             Object field = subObject.get(key);
             addFieldDTO(fields, key, relTableName, field, false);
