@@ -9,6 +9,7 @@ import static data.provider.FormatDataProvider.*;
 import static data.provider.MongoDBStringConstantsProvider.*;
 import converter.types.FieldDTOPostgreSQLTypes;
 import data.NameType;
+import data.SubObjectData;
 import data.TableData;
 import database.Database;
 import database.MongoDB;
@@ -19,12 +20,8 @@ import dto.TableDTO;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import transformer.DBTransformer;
-import com.ibatis.common.jdbc.ScriptRunner;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -68,6 +65,7 @@ public class ToPostgreSQLTransformer
             ToPostgreSQLTypeConverter.convertAllFields(databaseDTO);
             fillCollectionsTable();
             //can do more threads here (for current table)
+
             databaseDTO.getProvider().getDatabaseMetadata().forEach((tableData, fields) -> {
                 try {
 
@@ -160,16 +158,20 @@ public class ToPostgreSQLTransformer
                             Map<String, FieldDTO> fields, Map<String, String> values) throws IOException, SQLException {
 
         String oldTableName = getNameFromMap(currentMapName);
+        List<SubObjectData> subObjects = new ArrayList<>();
 
         String fileName = "src/main/temp_" + newTableName + ".sql";
         for (String key : doc.keySet()) {
             Object field = doc.get(key);
             //if it's object
             if (field instanceof Document) {
+                Map<String, String> subObjectValues = new HashMap<>();
+                Map<NameType, List<String>> subMapName = new HashMap<>();
+                Document subField = null;
+                String newSubObjectTableName = null;
+                Map<String, FieldDTO> subObjectFields = new HashMap<>();
 
                 String subObjectName = oldTableName + delimiterForNames + key;
-                Map<String, FieldDTO> subObjectFields = new HashMap<>();
-                String newSubObjectTableName = null;
 
                 for (TableData tableData : databaseDTO.getProvider().getDatabaseMetadata().keySet()) {
                     if (tableData.getOldName().equals(subObjectName)){
@@ -181,19 +183,17 @@ public class ToPostgreSQLTransformer
                 long id = getUniqueId(subObjectName);
                 values.put(String.valueOf(id), key + documentIdFieldName);
                 if (newSubObjectTableName != null) {
-                    Map<String, String> subObjectValues = new HashMap<>();
+                    subField = (Document) field;
                     subObjectValues.put(String.valueOf(id), documentIdFieldName);
-                    Map<NameType, List<String>> subMapName = new HashMap<>();
                     for (Map<NameType, List<String>> map : objectNames) {
                         if (map.containsKey(NameType.SUB_OBJECT) && map.get(NameType.SUB_OBJECT).get(0).equals(subObjectName)){
                             subMapName = map;
                         }
                     }
-                    fillValues(subMapName, (Document) field, newSubObjectTableName, subObjectFields, subObjectValues);
                 }
-                //if not object
-            }
-            else {
+                subObjects.add(new SubObjectData(subObjectValues, subMapName, subField, newSubObjectTableName, subObjectFields));
+
+            } else {
                 values.put(doc.get(key).toString(), fields.get(key).getName());
             }
         }
@@ -210,6 +210,9 @@ public class ToPostgreSQLTransformer
         System.out.println("fillValues: " + insertOneRowQuery);
         statementTo.execute(insertOneRowQuery);
 //        fillSqlFile(insertOneRowQuery, fileName);
+        for (SubObjectData subObject : subObjects) {
+            fillValues(subObject.getMapName(), subObject.getField(), subObject.getNewTableName(), subObject.getFields(), subObject.getValues());
+        }
     }
 
     private void fillCollectionsTable() throws SQLException {
