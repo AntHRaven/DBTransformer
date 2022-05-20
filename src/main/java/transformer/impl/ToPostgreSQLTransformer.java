@@ -156,7 +156,7 @@ public class ToPostgreSQLTransformer
 
         if (type == NameType.DOCUMENT){
             String collectionName = currentMapName.get(NameType.COLLECTION).get(0);
-            values.put(collectionName, fields.get(collectionFieldName).getName());
+            values.put(fields.get(collectionFieldName).getName(), collectionName);
         } else if (type == NameType.SUB_OBJECT){
             values.putAll(subValues);
         }
@@ -185,10 +185,10 @@ public class ToPostgreSQLTransformer
                 }
 
                 long id = getUniqueId(subObjectName);
-                values.put(String.valueOf(id), key + documentIdFieldName);
+                values.put(key + documentIdFieldName, String.valueOf(id));
                 if (newSubObjectTableName != null) {
                     subField = (Document) field;
-                    subObjectValues.put(String.valueOf(id), documentIdFieldName);
+                    subObjectValues.put(documentIdFieldName, String.valueOf(id));
                     for (Map<NameType, List<String>> map : objectNames) {
                         if (map.containsKey(NameType.SUB_OBJECT) && map.get(NameType.SUB_OBJECT).get(0).equals(subObjectName)){
                             subMapName = map;
@@ -198,14 +198,14 @@ public class ToPostgreSQLTransformer
                 subObjects.add(new SubObjectData(subObjectValues, subMapName, subField, newSubObjectTableName, subObjectFields));
 
             } else {
-                values.put(doc.get(key).toString(), fields.get(key).getName());
+                values.put(fields.get(key).getName(), doc.get(key).toString());
             }
         }
 
-        List<String> fieldsNames = new ArrayList<>();
-        values.keySet().forEach(k -> fieldsNames.add(values.get(k)));
+        List<String> fieldsValues = new ArrayList<>();
+        values.keySet().forEach(k -> fieldsValues.add(values.get(k)));
 
-        List<String> fieldsValues = new ArrayList<>(values.keySet());
+        List<String> fieldsNames = new ArrayList<>(values.keySet());
 
         Connection connectionTo = ((PostgreSQL) to).getConnection();
         Statement statementTo = connectionTo.createStatement();

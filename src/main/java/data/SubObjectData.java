@@ -11,6 +11,7 @@ import org.bson.Document;
 
 @Getter
 @Setter
+@AllArgsConstructor
 public class SubObjectData {
 
   private Map<String, String> values;
@@ -18,13 +19,5 @@ public class SubObjectData {
   private Document field;
   private String newTableName;
   private Map<String, FieldDTO> fields;
-
-  public SubObjectData(Map<String, String> values, Map<NameType, List<String>> mapName, Document field, String newTableName, Map<String, FieldDTO> fields){
-    this.values = new HashMap<>(values);
-    this.mapName = mapName;
-    this.field = field;
-    this.fields = fields;
-    this.newTableName = newTableName;
-  }
 
 }
