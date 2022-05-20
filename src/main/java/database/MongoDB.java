@@ -123,7 +123,7 @@ public class MongoDB extends Database {
       relTableName.get(NameType.RELATION).add(name);
       fields.add(
           new FieldDTO(
-              key + documentIdFieldName,
+              key,
               FieldDTOMongoDBTypes.OBJECT_ID,
               isPK,
               new ForeignKeyDTO(name, documentIdFieldName)

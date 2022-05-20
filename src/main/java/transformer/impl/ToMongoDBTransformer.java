@@ -54,7 +54,8 @@ public class ToMongoDBTransformer implements DBTransformer {
       Map<String, FieldDTO> fields,
       Connection connectionFrom
   ) throws SQLException {
-
+    System.out.println("-------------------------------");
+    System.out.println(tableData.getOldName());
     ArrayList<Document> documents = new ArrayList<>();
     MongoClient mongoClient = ((MongoDB) to).getMongoClient();
     MongoDatabase db = mongoClient.getDatabase(to.getName());
@@ -64,6 +65,7 @@ public class ToMongoDBTransformer implements DBTransformer {
 
     Statement statementFrom = connectionFrom.createStatement();
     String selectQuery = "SELECT " + getListOfOldFieldsNames(fields) + " FROM " + tableData.getOldName();
+    System.out.println("createCollection:" + selectQuery);
     ResultSet rows = statementFrom.executeQuery(selectQuery);
 
     while (rows.next()) {
@@ -83,7 +85,8 @@ public class ToMongoDBTransformer implements DBTransformer {
     String oldRelTableName = field.getFK().getRelTableName();
     String oldRelFieldName = field.getFK().getRelFieldName();
     Statement statementFrom = connection.createStatement();
-    String selectQuery = "SELECT * FROM " + oldRelTableName + " WHERE " + oldRelFieldName + "=" + "'" + value + "'";
+    String selectQuery = "SELECT * FROM " +  oldRelTableName + " WHERE " + oldRelFieldName + "=" + "'" + value + "'";
+    System.out.println("makeSubObject: " + selectQuery);
     ResultSet row = statementFrom.executeQuery(selectQuery);
     Map<String, FieldDTO> fields = new HashMap<>();
 
@@ -111,18 +114,23 @@ public class ToMongoDBTransformer implements DBTransformer {
       FieldDTO field = fields.get(oldFieldName);
 
       if (field.getFK() == null) {
+        System.out.println("IF");
         values.put(fields.get(oldFieldName).getName(), res.getObject(oldFieldName));
+        for (Map.Entry<String, Object> entry : values.entrySet()) {
+          System.out.println(entry.getKey() + ":" + entry.getValue());
+        }
       } else {
+        System.out.println("ELSE");
         values.put(fields.get(oldFieldName).getName(), makeSubObject(field, res.getObject(oldFieldName), connection));
 
         for (TableData tableData : databaseDTO.getProvider().getDatabaseMetadata().keySet()) {
-          System.out.println(tableData.getOldName());
-          System.out.println(field.getFK().getRelTableName());
-
           if (tableData.getOldName().equals(field.getFK().getRelTableName())) {
             removed.add(tableData.getTableDTO().getName());
             break;
           }
+        }
+        for (Map.Entry<String, Object> entry : values.entrySet()) {
+          System.out.println(entry.getKey() + ":" + entry.getValue());
         }
       }
     }

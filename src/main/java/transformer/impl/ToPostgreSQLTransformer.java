@@ -185,7 +185,7 @@ public class ToPostgreSQLTransformer
                 }
 
                 long id = getUniqueId(subObjectName);
-                values.put(key + documentIdFieldName, String.valueOf(id));
+                values.put(key, String.valueOf(id));
                 if (newSubObjectTableName != null) {
                     subField = (Document) field;
                     subObjectValues.put(documentIdFieldName, String.valueOf(id));
