@@ -203,6 +203,52 @@ public class ToPostgreSQLTransformer
               "INSERT INTO " + newTableName + "(" + getListOfFields(fieldsNames) + ") VALUES (" + getListOfValues(fieldsValues) + "); \n";
         fillSqlFile(insertOneRowQuery, fileName);
     }
+
+    private void fillSubObjectTableData(Document ob, String subObjectName, String newSubObjectTableName, Map<String, FieldDTO> fields,  Map<String, String> values) throws SQLException {
+        for (String key : ob.keySet()) {
+            Object field = ob.get(key);
+
+            //if it's object
+            if (field instanceof Document) {
+                String relTableName = subObjectName + delimiterForNames + key;
+
+                Map<String, FieldDTO> relTableFields = new HashMap<>();
+                String newRelTableName = null;
+
+                for (TableData tableData : databaseDTO.getProvider().getDatabaseMetadata().keySet()) {
+                    if (tableData.getOldName().equals(relTableName)){
+                        relTableFields = databaseDTO.getProvider().getDatabaseMetadata().get(tableData);
+                        newRelTableName = tableData.getTableDTO().getName();
+                    }
+                }
+
+                long id = getUniqueId(relTableName);
+                values.put(String.valueOf(id), key + documentIdFieldName);
+                if (newRelTableName != null) {
+                    Map<String, String> relTableValues = new HashMap<>();
+                    relTableValues.put(String.valueOf(id), documentIdFieldName);
+                    fillSubObjectTableData((Document) field, relTableName, newRelTableName, relTableFields, relTableValues);
+                }
+                //if not object
+            }
+            else {
+                values.put(ob.get(key).toString(), fields.get(key).getName());
+            }
+        }
+
+        List<String> fieldsNames = new ArrayList<>();
+        values.keySet().forEach(k -> fieldsNames.add(values.get(k)));
+
+        List<String> fieldsValues = new ArrayList<>(values.keySet());
+
+
+        Connection connectionTo = ((PostgreSQL) to).getConnection();
+        String insertOneRowQuery =
+            "INSERT INTO " + newSubObjectTableName + "(" + getListOfFields(fieldsNames) + ") VALUES (" + getListOfValues(fieldsValues) + ")";
+        Statement statementTo = connectionTo.createStatement();
+        System.out.println(insertOneRowQuery);
+        statementTo.executeQuery(insertOneRowQuery);
+    }
     
     private void clearFile(File file) throws IOException {
         
@@ -256,52 +302,6 @@ public class ToPostgreSQLTransformer
                 statementTo.execute(insertQuery);
             }
             
-        }
-    }
-    
-    private void fillSubObjectTableData(Document ob, String subObjectName, String newSubObjectTableName, Map<String, FieldDTO> fields,  Map<String, String> values) throws SQLException {
-        for (String key : ob.keySet()) {
-            Object field = ob.get(key);
-            
-            //if it's object
-            if (field instanceof Document) {
-                String relTableName = subObjectName + delimiterForNames + key;
-
-                Map<String, FieldDTO> relTableFields = new HashMap<>();
-                String newRelTableName = null;
-
-                for (TableData tableData : databaseDTO.getProvider().getDatabaseMetadata().keySet()) {
-                    if (tableData.getOldName().equals(relTableName)){
-                        relTableFields = databaseDTO.getProvider().getDatabaseMetadata().get(tableData);
-                        newRelTableName = tableData.getTableDTO().getName();
-                    }
-                }
-
-                long id = getUniqueId(relTableName);
-                values.put(String.valueOf(id), key + documentIdFieldName);
-                if (newRelTableName != null) {
-                    Map<String, String> relTableValues = new HashMap<>();
-                    relTableValues.put(String.valueOf(id), documentIdFieldName);
-                    fillSubObjectTableData((Document) field, relTableName, newRelTableName, relTableFields, relTableValues);
-                }
-                //if not object
-            }
-            else {
-                values.put(ob.get(key).toString(), fields.get(key).getName());
-            }
-
-            List<String> fieldsNames = new ArrayList<>();
-            values.keySet().forEach(k -> fieldsNames.add(values.get(k)));
-
-            List<String> fieldsValues = new ArrayList<>(values.keySet());
-
-
-            Connection connectionTo = ((PostgreSQL) to).getConnection();
-            String insertOneRowQuery =
-                  "INSERT INTO " + newSubObjectTableName + "(" + getListOfFields(fieldsNames) + ") VALUES (" + getListOfValues(fieldsValues) + ")";
-            Statement statementTo = connectionTo.createStatement();
-            System.out.println(insertOneRowQuery);
-            statementTo.executeQuery(insertOneRowQuery);
         }
     }
     
