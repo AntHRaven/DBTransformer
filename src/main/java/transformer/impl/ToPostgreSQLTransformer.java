@@ -171,32 +171,26 @@ public class ToPostgreSQLTransformer
     
                 String subObjectName = oldTableName + delimiterForNames + key;
                 Map<String, FieldDTO> subObjectFields = new HashMap<>();
+                String newSubObjectTableName = null;
     
                 for (TableData tableData : databaseDTO.getProvider().getDatabaseMetadata().keySet()) {
                     if (tableData.getOldName().equals(subObjectName)){
                         subObjectFields = databaseDTO.getProvider().getDatabaseMetadata().get(tableData);
+                        newSubObjectTableName = tableData.getTableDTO().getName();
                     }
                 }
-    
-                System.out.println("Object: " + key + " - subObjectName = " + subObjectName);
-                System.out.println("Relational: " + currentMapName.get(NameType.RELATION).get(0));
-    
-                System.out.println("================");
-                for (String k : subObjectFields.keySet()) {
-                    System.out.println(k);
-                }
-                System.out.println("================");
                 
                 long id = getUniqueId(subObjectName);
-                values.put(String.valueOf(id), subObjectFields.get(key + documentIdFieldName).getName());
-                System.out.println("---------------------");
-                fillSubObjectTableData((Document) field, subObjectName, id);
+                values.put(String.valueOf(id), key + documentIdFieldName);
+                if (newSubObjectTableName != null) {
+                    Map<String, String> subObjectValues = new HashMap<>();
+                    subObjectValues.put(String.valueOf(id), documentIdFieldName);
+                    fillSubObjectTableData((Document) field, subObjectName, newSubObjectTableName, subObjectFields, subObjectValues);
+                }
                 //if not object
             }
             else {
-                System.out.println("Not object: " + key);
                 values.put(doc.get(key).toString(), fields.get(key).getName());
-                System.out.println("---------------------");
             }
         }
         
@@ -265,42 +259,46 @@ public class ToPostgreSQLTransformer
         }
     }
     
-    private void fillSubObjectTableData(Document ob, String subObjectName, long idInParentTable) throws SQLException {
-    
-        System.out.println("Come to fillSubObjectTableData");
-        
-        String newTableName = "";
-        Map<String, FieldDTO> fields = new HashMap<>();
-        
-        for (TableData tableData : databaseDTO.getProvider().getDatabaseMetadata().keySet()) {
-            if (tableData.getOldName().equals(subObjectName)) {
-                newTableName = tableData.getTableDTO().getName();
-                fields = databaseDTO.getProvider().getDatabaseMetadata().get(tableData);
-                break;
-            }
-        }
-        
-        List<String> values = new ArrayList<>();
-        values.add(String.valueOf(idInParentTable));
-        
+    private void fillSubObjectTableData(Document ob, String subObjectName, String newSubObjectTableName, Map<String, FieldDTO> fields,  Map<String, String> values) throws SQLException {
         for (String key : ob.keySet()) {
             Object field = ob.get(key);
             
             //if it's object
             if (field instanceof Document) {
-                String relTableName = subObjectName + key;
+                String relTableName = subObjectName + delimiterForNames + key;
+
+                Map<String, FieldDTO> relTableFields = new HashMap<>();
+                String newRelTableName = null;
+
+                for (TableData tableData : databaseDTO.getProvider().getDatabaseMetadata().keySet()) {
+                    if (tableData.getOldName().equals(relTableName)){
+                        relTableFields = databaseDTO.getProvider().getDatabaseMetadata().get(tableData);
+                        newRelTableName = tableData.getTableDTO().getName();
+                    }
+                }
+
                 long id = getUniqueId(relTableName);
-                values.add(String.valueOf(id));
-                fillSubObjectTableData((Document) field, relTableName, id);
+                values.put(String.valueOf(id), key + documentIdFieldName);
+                if (newRelTableName != null) {
+                    Map<String, String> relTableValues = new HashMap<>();
+                    relTableValues.put(String.valueOf(id), documentIdFieldName);
+                    fillSubObjectTableData((Document) field, relTableName, newRelTableName, relTableFields, relTableValues);
+                }
                 //if not object
             }
             else {
-                values.add((String) ob.get(key));
+                values.put(ob.get(key).toString(), fields.get(key).getName());
             }
-            
+
+            List<String> fieldsNames = new ArrayList<>();
+            values.keySet().forEach(k -> fieldsNames.add(values.get(k)));
+
+            List<String> fieldsValues = new ArrayList<>(values.keySet());
+
+
             Connection connectionTo = ((PostgreSQL) to).getConnection();
             String insertOneRowQuery =
-                  "INSERT INTO " + newTableName + "(" + getListOfNewFieldsNames(fields) + ") VALUES (" + getListOfValues(values) + ")";
+                  "INSERT INTO " + newSubObjectTableName + "(" + getListOfFields(fieldsNames) + ") VALUES (" + getListOfValues(fieldsValues) + ")";
             Statement statementTo = connectionTo.createStatement();
             System.out.println(insertOneRowQuery);
             statementTo.executeQuery(insertOneRowQuery);
