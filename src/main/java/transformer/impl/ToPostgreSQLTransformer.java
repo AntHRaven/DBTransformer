@@ -124,8 +124,7 @@ public class ToPostgreSQLTransformer
         MongoCollection<Document> collection = db.getCollection(collectionName);
 
         for (Document doc : collection.find()) {
-            Map<String, String> values = new HashMap<>();
-            fillValues(currentMapName, doc, tableNameOfCollection, fields, values);
+            fillValues(NameType.COLLECTION, currentMapName, doc, tableNameOfCollection, fields, null);
         }
 //        String fileName = "src/main/temp_" + collectionName + ".sql";
 //        executeSqlFile(fileName);
@@ -135,27 +134,32 @@ public class ToPostgreSQLTransformer
     private void fillTableData(Map<NameType, List<String>> currentMapName, String newTableName, Map<String, FieldDTO> fields,
                                MongoClient mongoClientFrom) throws SQLException,
                                                                                                                                                              IOException {
-        String collectionName = currentMapName.get(NameType.COLLECTION).get(0);
         String documentId = currentMapName.get(NameType.ID).get(0);
-        Map<String, String> values = new HashMap<>();
-
-        values.put(collectionName, fields.get(collectionFieldName).getName());
 
         MongoDatabase db = mongoClientFrom.getDatabase(databaseDTO.getName());
-        MongoCollection<Document> collection = db.getCollection(collectionName);
+        MongoCollection<Document> collection = db.getCollection(currentMapName.get(NameType.COLLECTION).get(0));
 
         Document doc = collection.find(eq("_id", new ObjectId(documentId))).first();
         if (doc != null) {
             File file = new File("src/main/temp_" + newTableName + ".sql");
 //            clearFile(file);
-            fillValues(currentMapName, doc, newTableName, fields, values);
+            fillValues(NameType.DOCUMENT, currentMapName, doc, newTableName, fields, null);
 //            executeSqlFile(newTableName);
 //            file.delete();
         }
     }
 
-    private void fillValues(Map<NameType, List<String>> currentMapName, Document doc, String newTableName,
-                            Map<String, FieldDTO> fields, Map<String, String> values) throws IOException, SQLException {
+    private void fillValues(NameType type, Map<NameType, List<String>> currentMapName, Document doc, String newTableName,
+                            Map<String, FieldDTO> fields, Map<String, String> subValues) throws IOException, SQLException {
+
+        Map<String, String> values = new HashMap<>();
+
+        if (type == NameType.DOCUMENT){
+            String collectionName = currentMapName.get(NameType.COLLECTION).get(0);
+            values.put(collectionName, fields.get(collectionFieldName).getName());
+        } else if (type == NameType.SUB_OBJECT){
+            values.putAll(subValues);
+        }
 
         String oldTableName = getNameFromMap(currentMapName);
         List<SubObjectData> subObjects = new ArrayList<>();
@@ -211,7 +215,7 @@ public class ToPostgreSQLTransformer
         statementTo.execute(insertOneRowQuery);
 //        fillSqlFile(insertOneRowQuery, fileName);
         for (SubObjectData subObject : subObjects) {
-            fillValues(subObject.getMapName(), subObject.getField(), subObject.getNewTableName(), subObject.getFields(), subObject.getValues());
+            fillValues(NameType.SUB_OBJECT, subObject.getMapName(), subObject.getField(), subObject.getNewTableName(), subObject.getFields(), subObject.getValues());
         }
     }
 
