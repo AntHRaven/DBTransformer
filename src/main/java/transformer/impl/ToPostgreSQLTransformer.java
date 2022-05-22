@@ -104,7 +104,6 @@ public class ToPostgreSQLTransformer
         ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(5);
         executor.invokeAll(callablesFillTableDataTasks);
         callablesFillTableDataTasks.clear();
-        executor.shutdown();
 
     }
 
@@ -273,7 +272,6 @@ public class ToPostgreSQLTransformer
         ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(5);
         executor.invokeAll(callablesAddForeignKeysTasks);
         callablesAddForeignKeysTasks.clear();
-        executor.shutdown();
     }
 
     private void createTables(DatabaseDTO databaseDTO, Database to) throws SQLException, InterruptedException {
@@ -288,7 +286,6 @@ public class ToPostgreSQLTransformer
         ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(5);
         executor.invokeAll(callablesCreateTableTasks);
         callablesCreateTableTasks.clear();
-        executor.shutdown();
     }
 
     private String generateSQLFields(List<FieldDTO> fields) {

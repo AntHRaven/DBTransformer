@@ -92,7 +92,7 @@ public class PostgreSQL extends Database {
     return false;
   }
 
-  private ArrayList<String> getAllTablesNames() throws SQLException {
+  public ArrayList<String> getAllTablesNames() throws SQLException {
     ArrayList<String> tablesNames = new ArrayList<>();
     ResultSet rs = metaData.getTables(null, null, "%", new String[]{"TABLE"});
 

@@ -185,12 +185,15 @@ public class MongoDB extends Database {
     MongoDatabase db = mongoClient.getDatabase(this.name);
 
     for (String collectionName : db.listCollectionNames()) {
-
-      if (names.contains(collectionName) || names.isEmpty()) {
+      if ((names.contains(collectionName) || names.isEmpty()) && !collectionName.startsWith("system.")) {
         collections.add(db.getCollection(collectionName));
       }
     }
     return collections;
+  }
+
+  public List<String> getListDataBases() {
+    return (List<String>) mongoClient.getDatabase(this.name).listCollectionNames();
   }
 
 }
