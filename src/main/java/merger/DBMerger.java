@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface DBMerger {
 
-  void merge(DatabaseDTO from, Database to) throws SQLException, InterruptedException;
+  void merge(Database from, Database to) throws SQLException, InterruptedException;
 
-  DatabaseDTO getMergedDto(List<DatabaseDTO> databaseList) throws SQLException;
+  DatabaseDTO getMergedDto(List<Database> databaseList, Database to) throws SQLException;
 }
