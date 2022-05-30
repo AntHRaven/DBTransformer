@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 public class DBMergerImpl implements DBMerger {
 
-    @Override
+
     public DatabaseDTO getMergedDto(List<Database> databaseList, Database to) {
         List<TableDTO> tableDTOS = new ArrayList<>();
         List<DatabaseDTO> databaseDTOS = databaseList.stream().map((item) -> {
@@ -52,10 +52,8 @@ public class DBMergerImpl implements DBMerger {
         return databaseDTO;
     }
 
-
-
     @Override
-    public void merge(Database from, Database to) throws SQLException, InterruptedException {
+    public void merge(DatabaseDTO from, Database to) throws SQLException, InterruptedException {
         to.getTransformer().transform(from, to);
     }
 
@@ -70,6 +68,6 @@ public class DBMergerImpl implements DBMerger {
             fieldDTOS.addAll(tableDTO.getFields());
         }
 
-        return new TableDTO(tableName, new ArrayList<>(fieldDTOS));
+        return new TableDTO(tableName, new ArrayList<>(fieldDTOS), null);
     }
 }

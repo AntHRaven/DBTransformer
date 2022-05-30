@@ -10,6 +10,7 @@ import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.ForeignKeyDTO;
 import dto.TableDTO;
+import java.sql.SQLException;
 import lombok.Getter;
 import org.bson.Document;
 import transformer.DBTransformer;
@@ -43,6 +44,11 @@ public class MongoDB extends Database {
     DatabaseDTO databaseDTO = new DatabaseDTO(this.name, tables, this.getClass());
     databaseDTO.initializeProvider();
     return databaseDTO;
+  }
+
+  @Override
+  public DatabaseDTO getDBData(Long page, Long size) throws SQLException {
+    return null;
   }
 
   private void makeAllTables() {
@@ -101,7 +107,7 @@ public class MongoDB extends Database {
   private void makeTableCollections() {
     ArrayList<FieldDTO> fields = new ArrayList<>();
     fields.add(new FieldDTO(collectionFieldName, FieldDTOMongoDBTypes.STRING, true, null));
-    tables.add(new TableDTO(collectionTableName, fields));
+    tables.add(new TableDTO(collectionTableName, fields, null));
   }
 
   private void addFieldDTO(
@@ -144,7 +150,7 @@ public class MongoDB extends Database {
 
       addFieldDTO(fields, key, name, field, isPK);
     }
-    tables.add(new TableDTO(getNameFromMap(name), fields));
+    tables.add(new TableDTO(getNameFromMap(name), fields, null));
   }
 
   private void makeTableFromDocument(Document document, MongoCollection<Document> collection) {
@@ -177,7 +183,7 @@ public class MongoDB extends Database {
       addFieldDTO(fields, key, currentName, field, false);
     }
     objectNames.add(currentName);
-    tables.add(new TableDTO(tableName, fields));
+    tables.add(new TableDTO(tableName, fields, null));
   }
 
   private Set<MongoCollection<Document>> getAllCollections() {
@@ -193,7 +199,13 @@ public class MongoDB extends Database {
   }
 
   public List<String> getListDataBases() {
-    return (List<String>) mongoClient.getDatabase(this.name).listCollectionNames();
+    List<String> dataBases = new ArrayList<>();
+    for(String name : mongoClient.getDatabase(this.name).listCollectionNames()) {
+      if(!name.startsWith("system.")) {
+        dataBases.add(name);
+      }
+    }
+    return dataBases;
   }
 
 }

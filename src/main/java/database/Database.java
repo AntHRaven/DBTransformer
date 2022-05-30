@@ -18,6 +18,8 @@ public abstract class Database {
 
   abstract public DatabaseDTO makeDTO() throws SQLException;
 
+  abstract public DatabaseDTO getDBData(Long page, Long size) throws SQLException;
+
   Database(String dbName, List<String> names) {
     this.name = dbName;
     this.names = names;

@@ -5,6 +5,10 @@ import dto.DatabaseDTO;
 import dto.FieldDTO;
 import dto.ForeignKeyDTO;
 import dto.TableDTO;
+import java.util.HashMap;
+import java.util.Map;
+import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import org.postgresql.ds.PGConnectionPoolDataSource;
 import transformer.DBTransformer;
 import transformer.impl.ToPostgreSQLTransformer;
@@ -50,7 +54,7 @@ public class PostgreSQL extends Database {
     for (String tableName : getAllTablesNames()) {
 
       if (names.contains(tableName) || names.isEmpty()) {
-        TableDTO tableDTO = new TableDTO(tableName, getAllTableFields(tableName));
+        TableDTO tableDTO = new TableDTO(tableName, getAllTableFields(tableName), null);
         tables.add(tableDTO);
       }
     }
@@ -112,6 +116,31 @@ public class PostgreSQL extends Database {
     return primaryKeys;
   }
 
+  public DatabaseDTO getDBData(Long offset, Long size) throws SQLException {
+    DatabaseDTO databaseDTO = makeDTO();
+    Statement statement =  connectionPool.getConnection().createStatement();
+    for (TableDTO tableDTO : databaseDTO.getTables()) {
+      String getDataQuery = "select * from " + tableDTO.getName() + " limit " + size + " offset " + offset;
+      System.out.println(getDataQuery);
+      ResultSet resultSet = statement.executeQuery(getDataQuery);
+      while(resultSet.next()){
+        List<Map<String, String>> data = tableDTO.getData();
+        Map<String, String> dataItem = new HashMap<>();
+        if(data == null) data = new ArrayList<>();
+        for(FieldDTO fieldDTO : tableDTO.getFields()) {
+          dataItem.put(fieldDTO.getName(), resultSet.getString(fieldDTO.getName()));
+        }
+        System.out.println(data);
+        System.out.println("----");
+        data.add(dataItem);
+        tableDTO.setData(data);
+      }
+    }
+    databaseDTO.getTables().forEach((tableDTO -> {
+      System.out.println(tableDTO.getData());
+    }));
+    return databaseDTO;
+  }
 
 }
 
